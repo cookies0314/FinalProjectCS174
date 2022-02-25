@@ -15,22 +15,23 @@ export class BeachScene extends Scene {
         // constructor(): Scenes begin by populating initial values like the Shapes and Materials they'll need.
         super();
 
-        // const initial_corner_point = vec3(-15, -15, 0);
-        // const row_operation = (s, p) => p ? Mat4.translation(0, .2, 0).times(p.to4(1)).to3()
-        //     : initial_corner_point;
-        // const column_operation = (t, p) => Mat4.translation(.2, 0, 0).times(p.to4(1)).to3();
+        const initial_corner_point = vec3(-15, -5, 0);
+        const row_operation = (s, p) => p ? Mat4.translation(0, .2, 0).times(p.to4(1)).to3()
+            : initial_corner_point;
+        const column_operation = (t, p) => Mat4.translation(.2, 0, 0).times(p.to4(1)).to3();
 
         this.shapes = {
              sun: new defs.Subdivision_Sphere(4),
+            sand: new defs.Grid_Patch(20, 200, row_operation, column_operation, [[0, 10], [0, 1]]),
         };
 
         // *** Materials
         this.materials = {
             sun: new Material(new defs.Phong_Shader(),{ambient: 1, diffusivity: 0, color: hex_color("#FFFF00")}),
             texturedSand: new Material(new Textured_Phong(), {
-                color: hex_color("#000000"),
-                ambient: 1, diffusivity: 0.1, specularity: 0.1,
-                texture: new Texture("assets/textured_sand.jpg")
+                color: hex_color("#FFFFFF"),
+                ambient: 1, diffusivity: 0.6, specularity: 0.2,
+                texture: new Texture("assets/textured_sand.png")
             }),
             texturedWater: new Material(new Textured_Phong(), {
                 color: hex_color("#000000"),
@@ -89,7 +90,7 @@ export class BeachScene extends Scene {
         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
-            program_state.set_camera(Mat4.translation(8, 5, -20));
+            program_state.set_camera(Mat4.translation(0, 0, -20));
         }
 
         program_state.projection_transform = Mat4.perspective(
@@ -98,19 +99,32 @@ export class BeachScene extends Scene {
 
         const t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
 
-        
         //  Create Sun
         let sun_transform = Mat4.identity();
-        sun_transform     = sun_transform.times(Mat4.scale(2, 2, 2));
+        sun_transform     = sun_transform.times(Mat4.translation(8, 6, 0))
+                                            .times(Mat4.scale(2, 2, 2));
 
         // Sun Lighting
         // The parameters of the Light are: position, color, size
-        const light_position = vec4(0, 0, 0, 1);
-        program_state.lights = [new Light(light_position, color(1, 2+Math.sin(t), 2+Math.sin(t), 1), 10**(2+Math.sin(t)))];
+        const angle = Math.sin(t);
+        const light_position = Mat4.rotation(angle, 1, 0, 0).times(vec4(0, 0, 1, 0));
+        program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000000)];
+
+        // const light_position = Mat4.rotation(angle, 1, 0, 0).times(vec4(0, 0, 1, 0));
+        // program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000000)];
+
+        this.shapes.sun.draw(context, program_state, sun_transform, this.materials.sun);
+
+        let sand_transform = Mat4.identity();
+        sand_transform     = sand_transform.times(Mat4.translation(-5, -2, 5));
+       
+        for (var i = 0; i < 5; i++)
+            this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
+
+
+        
         
 
-        this.shapes.sun.draw(context, program_state,sun_transform, this.materials.sun);
-  
         
     }
 }
