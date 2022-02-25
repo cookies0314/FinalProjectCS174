@@ -25,7 +25,7 @@ export class BeachScene extends Scene {
             beachBall: new defs.Subdivision_Sphere(5),
             cubeSand: new Cube(),
             cube: new Cube(),
-            sky: new defs.Grid_Patch(100, 225, row_operation, column_operation, [[0, 10], [0, 1]]),
+            sky: new defs.Grid_Patch(200, 225, row_operation, column_operation, [[0, 10], [0, 1]]),
         };
 
         // *** Materials
@@ -176,18 +176,38 @@ export class BeachScene extends Scene {
         this.shapes.sky.draw(context, program_state, sky_transform, this.materials.texturedSky);
 
 
+        //Make rudimentary waves 
+        if(Math.floor(t) % 2 != 0){
 
-        //Loops to draw the sand and the water blocks
-        for (let i = 0; i < 12; i++) {
-            // this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
-            sand_transform = this.draw_sand(context, program_state, sand_transform);
+            water_transform = Mat4.identity();
+            water_transform = water_transform.times(Mat4.translation(-2, -2, 5))
+                .times(Mat4.scale(1,-1.5,10));
+
+            for (let i = 0; i < 10; i++) {
+                // this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
+                sand_transform = this.draw_sand(context, program_state, sand_transform);
+            }
+
+            for (let i = 0; i < 20; i++) {
+                // this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
+                water_transform = this.draw_water(context, program_state, water_transform);
+            }
         }
 
+        else{
+            //Loops to draw the sand and the water blocks
+            for (let i = 0; i < 12; i++) {
+                // this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
+                sand_transform = this.draw_sand(context, program_state, sand_transform);
+            }
 
-        for (let i = 0; i < 12; i++) {
-            // this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
-            water_transform = this.draw_water(context, program_state, water_transform);
+
+            for (let i = 0; i < 20; i++) {
+                // this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
+                water_transform = this.draw_water(context, program_state, water_transform);
+            }
         }
+
 
 
         //Create the beach ball
