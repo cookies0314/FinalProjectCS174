@@ -26,7 +26,7 @@ export class BeachScene extends Scene {
 
         // *** Materials
         this.materials = {
-            sun: new Material(new defs.Phong_Shader(),{ambient: 1, diffusivity: 0, color: hex_color("#ffffff")}),
+            sun: new Material(new defs.Phong_Shader(),{ambient: 1, diffusivity: 0, color: hex_color("#FFFF00")}),
             texturedSand: new Material(new Textured_Phong(), {
                 color: hex_color("#000000"),
                 ambient: 1, diffusivity: 0.1, specularity: 0.1,
@@ -89,7 +89,7 @@ export class BeachScene extends Scene {
         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
-            program_state.set_camera(Mat4.translation(0, 0, -20));
+            program_state.set_camera(Mat4.translation(8, 5, -20));
         }
 
         program_state.projection_transform = Mat4.perspective(
@@ -101,20 +101,16 @@ export class BeachScene extends Scene {
         
         //  Create Sun
         let sun_transform = Mat4.identity();
-        sun_transform     = sun_transform.times(Mat4.scale(2+Math.sin(t),
-                                                       2+1*Math.sin(t), 2+Math.sin(t)));
+        sun_transform     = sun_transform.times(Mat4.scale(2, 2, 2));
 
         // Sun Lighting
-        const sun_color = vec4(1, Math.sin(t), Math.sin(t), 1);
         // The parameters of the Light are: position, color, size
         const light_position = vec4(0, 0, 0, 1);
         program_state.lights = [new Light(light_position, color(1, 2+Math.sin(t), 2+Math.sin(t), 1), 10**(2+Math.sin(t)))];
         
 
-        this.shapes.sun.draw(context, program_state,sun_transform, this.materials.sun.override({color: sun_color}));
+        this.shapes.sun.draw(context, program_state,sun_transform, this.materials.sun);
   
         
-
-        program_state.set_camera(desired.map((x,i) => Vector.from(program_state.camera_inverse[i]).mix(x, 0.1)));
     }
 }
