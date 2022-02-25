@@ -22,9 +22,10 @@ export class BeachScene extends Scene {
 
         this.shapes = {
              sun: new defs.Subdivision_Sphere(4),
+            beachBall: new defs.Subdivision_Sphere(5),
             cubeSand: new Cube(),
             cube: new Cube(),
-            sand: new defs.Grid_Patch(100, 225, row_operation, column_operation, [[0, 10], [0, 1]]),
+            sky: new defs.Grid_Patch(100, 225, row_operation, column_operation, [[0, 10], [0, 1]]),
         };
 
         // *** Materials
@@ -45,6 +46,7 @@ export class BeachScene extends Scene {
                 ambient: 1, diffusivity: 0.1, specularity: 0.1,
                 texture: new Texture("assets/textured_water.jpeg")
             }),
+            texturedBeachBall:  new Material(bump, {ambient: 1, texture: new Texture("assets/beachball.jpg")}),
                 
         }
         this.initial_camera_location = Mat4.look_at(vec3(0, 10, 20), vec3(0, 0, 0), vec3(0, 1, 0));
@@ -91,6 +93,7 @@ export class BeachScene extends Scene {
     //     }
     // }
 
+    //Draws a single block of sand and moves the sand_transform to the next block
     draw_sand(context, program_state, sand_transform) {
         const t = this.t = program_state.animation_time / 1000;
         let rotation_angle = 0;
@@ -100,6 +103,7 @@ export class BeachScene extends Scene {
         return sand_transform;
     }
 
+    //Draws a single block of water and moves the water_transform to the next block
     draw_water(context, program_state, water_transform) {
         const t = this.t = program_state.animation_time / 1000;
         let rotation_angle = 0;
@@ -141,6 +145,7 @@ export class BeachScene extends Scene {
         sun_transform = sun_transform.times(Mat4.translation(8, 6, 0))
                                             .times(Mat4.scale(2, 2, 2));
 
+
         // Sun Lighting
         // The parameters of the Light are: position, color, size
         const angle = Math.sin(t);
@@ -152,6 +157,9 @@ export class BeachScene extends Scene {
 
         this.shapes.sun.draw(context, program_state, sun_transform, this.materials.sun);
 
+
+        //Sand, water, sky transforms
+            //Sand and water transform stretches sand & water to take up the whole beach
         let sand_transform = Mat4.identity();
         sand_transform     = sand_transform.times(Mat4.translation(-22, -2, 5))
             .times(Mat4.scale(1,-1.5,10));
@@ -160,13 +168,16 @@ export class BeachScene extends Scene {
         water_transform = water_transform.times(Mat4.translation(2, -2, 5))
             .times(Mat4.scale(1,-1.5,10));
 
+        //Sky transform moves the sky to the back of the sand and water
         let sky_transform = Mat4.identity();
         sky_transform = sky_transform.times(Mat4.translation(-8,4,-5.2));
 
-        this.shapes.sand.draw(context, program_state, sky_transform, this.materials.texturedSky);
+        //Draw the sky
+        this.shapes.sky.draw(context, program_state, sky_transform, this.materials.texturedSky);
 
 
 
+        //Loops to draw the sand and the water blocks
         for (let i = 0; i < 12; i++) {
             // this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
             sand_transform = this.draw_sand(context, program_state, sand_transform);
@@ -179,6 +190,15 @@ export class BeachScene extends Scene {
         }
 
 
-        
+        //Create the beach ball
+        let beachBall_transform = Mat4.identity();
+        beachBall_transform = beachBall_transform.times(Mat4.translation(-3, 0.2, 3))
+            .times(Mat4.scale(0.7,0.7,0.7));
+
+        this.shapes.beachBall.draw(context, program_state, beachBall_transform, this.materials.texturedBeachBall);
+
+
+
+
     }
 }
