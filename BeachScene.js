@@ -22,18 +22,24 @@ export class BeachScene extends Scene {
 
         this.shapes = {
              sun: new defs.Subdivision_Sphere(4),
+            cubeSand: new Cube(),
+            cube: new Cube(),
             sand: new defs.Grid_Patch(20, 200, row_operation, column_operation, [[0, 10], [0, 1]]),
         };
 
         // *** Materials
+        const bump = new defs.Fake_Bump_Map(1);
         this.materials = {
             sun: new Material(new defs.Phong_Shader(),{ambient: 1, diffusivity: 0, color: hex_color("#FFFF00")}),
-            texturedSand: new Material(new Textured_Phong(), {
-                color: hex_color("#FFFFFF"),
-                ambient: 1, diffusivity: 0.6, specularity: 0.2,
-                texture: new Texture("assets/textured_sand.png")
-            }),
-            texturedWater: new Material(new Textured_Phong(), {
+            //old texturedSand (didn't work)
+            // texturedSand: new Material(new Textured_Phong(), {
+            //     color: hex_color("#FFFFFF"),
+            //     ambient: 1, diffusivity: 0.6, specularity: 0.2,
+            //     texture: new Texture("assets/textured_sand.jpg")
+            // }),
+            texturedSand: new Material(bump, {ambient: 1, specularity: 0, texture: new Texture("assets/textured_sand.jpg")}),
+            texturedWater:  new Material(bump, {ambient: 1, texture: new Texture("assets/textured_water.jpeg")}),
+            oldWater: new Material(new Textured_Phong(), {
                 color: hex_color("#000000"),
                 ambient: 1, diffusivity: 0.1, specularity: 0.1,
                 texture: new Texture("assets/textured_water.jpeg")
@@ -64,8 +70,10 @@ export class BeachScene extends Scene {
         });
         this.new_line(); 
         this.new_line(); 
-        this.key_triggered_button("Restart", ["r"], () => {
-        });
+        this.key_triggered_button("Restart", ["r"], () => this.attached = () =>
+            this.initial_camera_location
+        );
+        // this.new_line();
 
     }
 
@@ -82,6 +90,24 @@ export class BeachScene extends Scene {
     //     }
     // }
 
+    draw_sand(context, program_state, sand_transform) {
+        const t = this.t = program_state.animation_time / 1000;
+        let rotation_angle = 0;
+
+        sand_transform = sand_transform.times(Mat4.translation(2,0,0));
+        this.shapes.cubeSand.draw(context, program_state, sand_transform, this.materials.texturedSand);
+        return sand_transform;
+    }
+
+    draw_water(context, program_state, water_transform) {
+        const t = this.t = program_state.animation_time / 1000;
+        let rotation_angle = 0;
+
+        water_transform = water_transform.times(Mat4.translation(2,0,0));
+        this.shapes.cube.draw(context, program_state, water_transform, this.materials.texturedWater);
+        return water_transform;
+    }
+
 
     display(context, program_state) {
         // display():  Called once per frame of animation.
@@ -90,8 +116,18 @@ export class BeachScene extends Scene {
         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
-            program_state.set_camera(Mat4.translation(0, 0, -20));
+            program_state.set_camera(Mat4.translation(0, -0.8, -20));
+            // program_state.set_camera(this.initial_camera_location);
         }
+
+        if(this.attached){
+            if(this.attached() == this.initial_camera_location) {
+                let location = this.initial_camera_location;
+                // program_state.set_camera(Mat4.inverse(location));
+                program_state.set_camera(location);
+            }
+        }
+
 
         program_state.projection_transform = Mat4.perspective(
             Math.PI / 4, context.width / context.height, .1, 100000);
@@ -101,13 +137,13 @@ export class BeachScene extends Scene {
 
         //  Create Sun
         let sun_transform = Mat4.identity();
-        sun_transform     = sun_transform.times(Mat4.translation(8, 6, 0))
+        sun_transform = sun_transform.times(Mat4.translation(8, 6, 0))
                                             .times(Mat4.scale(2, 2, 2));
 
         // Sun Lighting
         // The parameters of the Light are: position, color, size
         const angle = Math.sin(t);
-        const light_position = Mat4.rotation(angle, 1, 0, 0).times(vec4(0, 0, 1, 0));
+        const light_position = Mat4.rotation(angle, 1, 0, 0).times(vec4(8, 6, 1, 0));
         program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000000)];
 
         // const light_position = Mat4.rotation(angle, 1, 0, 0).times(vec4(0, 0, 1, 0));
@@ -116,14 +152,24 @@ export class BeachScene extends Scene {
         this.shapes.sun.draw(context, program_state, sun_transform, this.materials.sun);
 
         let sand_transform = Mat4.identity();
-        sand_transform     = sand_transform.times(Mat4.translation(-5, -2, 5));
+        sand_transform     = sand_transform.times(Mat4.translation(-22, -2, 5))
+            .times(Mat4.scale(1,-1.5,10));
+
+        let water_transform = Mat4.identity();
+        water_transform = water_transform.times(Mat4.translation(2, -2, 5))
+            .times(Mat4.scale(1,-1.5,10));
        
-        for (var i = 0; i < 5; i++)
-            this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
+        for (let i = 0; i < 12; i++) {
+            // this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
+            sand_transform = this.draw_sand(context, program_state, sand_transform);
+        }
 
 
-        
-        
+        for (let i = 0; i < 12; i++) {
+            // this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
+            water_transform = this.draw_water(context, program_state, water_transform);
+        }
+
 
         
     }
