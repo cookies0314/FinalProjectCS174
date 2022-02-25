@@ -24,7 +24,7 @@ export class BeachScene extends Scene {
              sun: new defs.Subdivision_Sphere(4),
             cubeSand: new Cube(),
             cube: new Cube(),
-            sand: new defs.Grid_Patch(20, 200, row_operation, column_operation, [[0, 10], [0, 1]]),
+            sand: new defs.Grid_Patch(100, 225, row_operation, column_operation, [[0, 10], [0, 1]]),
         };
 
         // *** Materials
@@ -39,6 +39,7 @@ export class BeachScene extends Scene {
             // }),
             texturedSand: new Material(bump, {ambient: 1, specularity: 0, texture: new Texture("assets/textured_sand.jpg")}),
             texturedWater:  new Material(bump, {ambient: 1, texture: new Texture("assets/textured_water.jpeg")}),
+            texturedSky:  new Material(bump, {ambient: 1, texture: new Texture("assets/textured_sky.jpg")}),
             oldWater: new Material(new Textured_Phong(), {
                 color: hex_color("#000000"),
                 ambient: 1, diffusivity: 0.1, specularity: 0.1,
@@ -158,7 +159,14 @@ export class BeachScene extends Scene {
         let water_transform = Mat4.identity();
         water_transform = water_transform.times(Mat4.translation(2, -2, 5))
             .times(Mat4.scale(1,-1.5,10));
-       
+
+        let sky_transform = Mat4.identity();
+        sky_transform = sky_transform.times(Mat4.translation(-8,4,-5.2));
+
+        this.shapes.sand.draw(context, program_state, sky_transform, this.materials.texturedSky);
+
+
+
         for (let i = 0; i < 12; i++) {
             // this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
             sand_transform = this.draw_sand(context, program_state, sand_transform);
