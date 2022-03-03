@@ -52,6 +52,7 @@ export class BeachScene extends Scene {
         this.initial_camera_location = Mat4.look_at(vec3(0, 10, 20), vec3(0, 0, 0), vec3(0, 1, 0));
     
 
+        this.sun_move = true;
         // this.chair_position; 
         // this.umbrella_positions; 
         //console.log(this.chair_position)
@@ -72,7 +73,10 @@ export class BeachScene extends Scene {
 
         });
         this.new_line(); 
-        this.new_line(); 
+        this.new_line();
+        this.key_triggered_button("Sun Move", ["f"], () => {
+            this.sun_move = !this.sun_move
+        })
         this.key_triggered_button("Restart", ["r"], () => this.attached = () =>
             this.initial_camera_location
         );
@@ -142,8 +146,20 @@ export class BeachScene extends Scene {
 
         //  Create Sun
         let sun_transform = Mat4.identity();
-        sun_transform = sun_transform.times(Mat4.translation(8, 6, 0))
-                                            .times(Mat4.scale(2, 2, 2));
+        let sun_angle = -2*t;
+        let sun_scale = 2*Math.cos(t);
+        //need to find better rotation
+
+        if(!this.sun_move)
+        {
+            sun_angle = 0;
+            sun_scale = 2;
+            //implement pause at current position
+        }
+
+        sun_transform = sun_transform.times(Mat4.rotation(sun_angle,0,0,1));
+        sun_transform = sun_transform.times(Mat4.translation(0,8,0));
+        sun_transform = sun_transform.times(Mat4.scale(sun_scale,sun_scale,sun_scale));
 
 
         // Sun Lighting
