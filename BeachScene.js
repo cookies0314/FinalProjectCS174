@@ -56,6 +56,11 @@ export class BeachScene extends Scene {
         // this.chair_position; 
         // this.umbrella_positions; 
         //console.log(this.chair_position)
+        this.sun_angle  = 0.0;
+        this.sun_scale  = 0.0;
+
+        this.saved_sun_angle  = 0.0;
+        this.saved_sun_scale  = 0.0;
     }
 
 
@@ -74,8 +79,11 @@ export class BeachScene extends Scene {
         });
         this.new_line(); 
         this.new_line();
-        this.key_triggered_button("Sun Move", ["f"], () => {
-            this.sun_move = !this.sun_move
+        this.key_triggered_button("Sun Move", ["b"], () => {
+            this.sun_move = !this.sun_move;
+            this.saved_sun_angle = this.sun_angle;
+            this.saved_sun_scale = this.sun_scale;
+            
         })
         this.key_triggered_button("Restart", ["r"], () => this.attached = () =>
             this.initial_camera_location
@@ -146,20 +154,24 @@ export class BeachScene extends Scene {
 
         //  Create Sun
         let sun_transform = Mat4.identity();
-        let sun_angle = -2*t;
-        let sun_scale = 2*Math.cos(t);
+        this.sun_angle = -2*t;
+        this.sun_scale = 2*Math.cos(t);
         //need to find better rotation
 
-        if(!this.sun_move)
+        // May need to debug, but this is for the sun to stay in position if "sun" button is pushed
+        if(this.sun_move)
         {
-            sun_angle = 0;
-            sun_scale = 2;
+            sun_transform = sun_transform.times(Mat4.rotation(this.sun_angle,0,0,1));
+            sun_transform = sun_transform.times(Mat4.translation(0,8,0));
+            sun_transform = sun_transform.times(Mat4.scale(this.sun_scale,this.sun_scale,this.sun_scale));
             //implement pause at current position
         }
+        else{
+            sun_transform = sun_transform.times(Mat4.rotation(this.saved_sun_angle,0,0,1));
+            sun_transform = sun_transform.times(Mat4.translation(0,8,0));
+            sun_transform = sun_transform.times(Mat4.scale(this.saved_sun_scale,this.saved_sun_scale,this.saved_sun_scale));            
+        }
 
-        sun_transform = sun_transform.times(Mat4.rotation(sun_angle,0,0,1));
-        sun_transform = sun_transform.times(Mat4.translation(0,8,0));
-        sun_transform = sun_transform.times(Mat4.scale(sun_scale,sun_scale,sun_scale));
 
 
         // Sun Lighting
