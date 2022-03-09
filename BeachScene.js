@@ -21,11 +21,12 @@ export class BeachScene extends Scene {
         const column_operation = (t, p) => Mat4.translation(.2, 0, 0).times(p.to4(1)).to3();
 
         this.shapes = {
-             sun: new defs.Subdivision_Sphere(4),
+            sun: new defs.Subdivision_Sphere(4),
             beachBall: new defs.Subdivision_Sphere(5),
             cubeSand: new Cube(),
             cube: new Cube(),
             sky: new defs.Grid_Patch(200, 225, row_operation, column_operation, [[0, 10], [0, 1]]),
+            moon: new defs.Subdivision_Sphere(3),
         };
 
         // *** Materials
@@ -47,12 +48,14 @@ export class BeachScene extends Scene {
                 texture: new Texture("assets/textured_water.jpeg")
             }),
             texturedBeachBall:  new Material(bump, {ambient: 1, texture: new Texture("assets/beachball.jpg")}),
+            moon: new Material (new defs.Phong_Shader(),
+                {color: hex_color("#C0C0C0"), ambient: 1, diffusivity: 0}),
                 
         }
         this.initial_camera_location = Mat4.look_at(vec3(0, 10, 20), vec3(0, 0, 0), vec3(0, 1, 0));
     
 
-        this.sun_move = true;
+        this.move = false;
         // this.chair_position; 
         // this.umbrella_positions; 
         //console.log(this.chair_position)
@@ -74,8 +77,8 @@ export class BeachScene extends Scene {
         });
         this.new_line(); 
         this.new_line();
-        this.key_triggered_button("Sun Move", ["f"], () => {
-            this.sun_move = !this.sun_move
+        this.key_triggered_button("Move", ["f"], () => {
+            this.move = !this.move
         })
         this.key_triggered_button("Restart", ["r"], () => this.attached = () =>
             this.initial_camera_location
@@ -147,18 +150,13 @@ export class BeachScene extends Scene {
         //  Create Sun
         let sun_transform = Mat4.identity();
         let sun_angle = -2*t;
-        let sun_scale = 2*Math.cos(t);
+        const begin = (1/5)*Math.PI;
+        let sun_scale = Math.cos(begin*t) + 2;
         //need to find better rotation
 
-        if(!this.sun_move)
-        {
-            sun_angle = 0;
-            sun_scale = 2;
-            //implement pause at current position
-        }
 
-        sun_transform = sun_transform.times(Mat4.rotation(sun_angle,0,0,1));
-        sun_transform = sun_transform.times(Mat4.translation(0,8,0));
+        sun_transform = sun_transform.times(Mat4.rotation(t,0,0,1));
+        sun_transform = sun_transform.times(Mat4.translation(-8,0,0));
         sun_transform = sun_transform.times(Mat4.scale(sun_scale,sun_scale,sun_scale));
 
 
@@ -172,6 +170,13 @@ export class BeachScene extends Scene {
         // program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000000)];
 
         this.shapes.sun.draw(context, program_state, sun_transform, this.materials.sun);
+
+        //moon
+        let moon_transform = Mat4.identity();
+        moon_transform = moon_transform.times(Mat4.rotation(t, 0,0,1));
+        moon_transform = moon_transform.times(Mat4.translation(8,0,0));
+
+        this.shapes.moon.draw(context, program_state, moon_transform, this.materials.moon);
 
 
         //Sand, water, sky transforms
