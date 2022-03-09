@@ -56,6 +56,8 @@ export class BeachScene extends Scene {
             }),
             cloudMat: new Material(bump, {ambient: 1, specularity: 0, texture: new Texture("assets/cloud.jpg")}),
             texturedBeachBall:  new Material(bump, {ambient: 1, texture: new Texture("assets/beachball.jpg")}),
+
+
             umbrellaMat: new Material(bump, {ambient: 1, specularity: 0, texture: new Texture("assets/umbrella.jpg")}),
             chairMat: new Material(bump, {ambient: 1, specularity: 0, texture: new Texture("assets/chairtexture.jpg")}),
             nighttexturedSand: new Material(bump, {ambient: 0.5, specularity: 0, texture: new Texture("assets/textured_sand.jpg")}),
@@ -76,7 +78,7 @@ export class BeachScene extends Scene {
         this.initial_camera_location = Mat4.look_at(vec3(1, 0, 0), vec3(0, 0, 1), vec3(0, 1, 0));
 
         this.light_position = 0;
-        this.sun_move = true;
+        this.sun_move = false;
         this.wind = false;
         // this.chair_position; 
         // this.umbrella_positions; 
@@ -107,33 +109,22 @@ export class BeachScene extends Scene {
 
         this.rain = false
 
-        // this.init_ok = false;
+        this.init_ok = false;
         //
-        // this.stars = new Material(new Shadow_Textured_Phong_Shader(1), {
-        //     color: color(.5, .5, .5, 1),
-        //     ambient: .4, diffusivity: .5, specularity: .5,
-        //     color_texture: new Texture("assets/stars.png"),
-        //     light_depth_texture: null
-        //
-        // });
-        // // For the floor or other plain objects
-        // this.floor = new Material(new Shadow_Textured_Phong_Shader(1), {
-        //     color: color(1, 1, 1, 1), ambient: .3, diffusivity: 0.6, specularity: 0.4, smoothness: 64,
-        //     color_texture: null,
-        //     light_depth_texture: null
-        // })
+
+
         // // For the first pass
-        // this.pure = new Material(new Color_Phong_Shader(), {
-        // })
+        this.pure = new Material(new Color_Phong_Shader(), {
+        })
         // // For light source
         // this.light_src = new Material(new defs.Phong_Shader(), {
         //     color: color(1, 1, 1, 1), ambient: 1, diffusivity: 0, specularity: 0
         // });
         // // For depth texture display
-        // this.depth_tex =  new Material(new Depth_Texture_Shader_2D(), {
-        //     color: color(0, 0, .0, 1),
-        //     ambient: 1, diffusivity: 0, specularity: 0, texture: null
-        // });
+        this.depth_tex =  new Material(new Depth_Texture_Shader_2D(), {
+            color: color(0, 0, .0, 1),
+            ambient: 1, diffusivity: 0, specularity: 0, texture: null
+        });
     }
 
 
@@ -179,70 +170,71 @@ export class BeachScene extends Scene {
 
     }
 
-    // texture_buffer_init(gl) {
+
+     texture_buffer_init(gl) {
     //     // Depth Texture
-    //     this.lightDepthTexture = gl.createTexture();
-    //     // Bind it to TinyGraphics
-    //     this.light_depth_texture = new Buffered_Texture(this.lightDepthTexture);
-    //     // this.stars.light_depth_texture = this.light_depth_texture
+         this.lightDepthTexture = gl.createTexture();
+         // Bind it to TinyGraphics
+         this.light_depth_texture = new Buffered_Texture(this.lightDepthTexture);
+         //this.texturedBeachBall.light_depth_texture = this.light_depth_texture;
     //     // this.floor.light_depth_texture = this.light_depth_texture
-    //
-    //     this.lightDepthTextureSize = LIGHT_DEPTH_TEX_SIZE;
-    //     gl.bindTexture(gl.TEXTURE_2D, this.lightDepthTexture);
-    //     gl.texImage2D(
-    //         gl.TEXTURE_2D,      // target
-    //         0,                  // mip level
-    //         gl.DEPTH_COMPONENT, // internal format
-    //         this.lightDepthTextureSize,   // width
-    //         this.lightDepthTextureSize,   // height
-    //         0,                  // border
-    //         gl.DEPTH_COMPONENT, // format
-    //         gl.UNSIGNED_INT,    // type
-    //         null);              // data
-    //     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    //     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    //     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    //     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    //
-    //     // Depth Texture Buffer
-    //     this.lightDepthFramebuffer = gl.createFramebuffer();
-    //     gl.bindFramebuffer(gl.FRAMEBUFFER, this.lightDepthFramebuffer);
-    //     gl.framebufferTexture2D(
-    //         gl.FRAMEBUFFER,       // target
-    //         gl.DEPTH_ATTACHMENT,  // attachment point
-    //         gl.TEXTURE_2D,        // texture target
-    //         this.lightDepthTexture,         // texture
-    //         0);                   // mip level
-    //     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    //
-    //     // create a color texture of the same size as the depth texture
-    //     // see article why this is needed_
-    //     this.unusedTexture = gl.createTexture();
-    //     gl.bindTexture(gl.TEXTURE_2D, this.unusedTexture);
-    //     gl.texImage2D(
-    //         gl.TEXTURE_2D,
-    //         0,
-    //         gl.RGBA,
-    //         this.lightDepthTextureSize,
-    //         this.lightDepthTextureSize,
-    //         0,
-    //         gl.RGBA,
-    //         gl.UNSIGNED_BYTE,
-    //         null,
-    //     );
-    //     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    //     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    //     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    //     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    //     // attach it to the framebuffer
-    //     gl.framebufferTexture2D(
-    //         gl.FRAMEBUFFER,        // target
-    //         gl.COLOR_ATTACHMENT0,  // attachment point
-    //         gl.TEXTURE_2D,         // texture target
-    //         this.unusedTexture,         // texture
-    //         0);                    // mip level
-    //     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    // }
+
+         this.lightDepthTextureSize = LIGHT_DEPTH_TEX_SIZE;
+         gl.bindTexture(gl.TEXTURE_2D, this.lightDepthTexture);
+         gl.texImage2D(
+             gl.TEXTURE_2D,      // target
+             0,                  // mip level
+             gl.DEPTH_COMPONENT, // internal format
+             this.lightDepthTextureSize,   // width
+             this.lightDepthTextureSize,   // height
+             0,                  // border
+             gl.DEPTH_COMPONENT, // format
+             gl.UNSIGNED_INT,    // type
+             null);              // data
+         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+         // Depth Texture Buffer
+         this.lightDepthFramebuffer = gl.createFramebuffer();
+         gl.bindFramebuffer(gl.FRAMEBUFFER, this.lightDepthFramebuffer);
+         gl.framebufferTexture2D(
+             gl.FRAMEBUFFER,       // target
+             gl.DEPTH_ATTACHMENT,  // attachment point
+             gl.TEXTURE_2D,        // texture target
+             this.lightDepthTexture,         // texture
+             0);                   // mip level
+         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+         // create a color texture of the same size as the depth texture
+        // see article why this is needed_
+         this.unusedTexture = gl.createTexture();
+         gl.bindTexture(gl.TEXTURE_2D, this.unusedTexture);
+         gl.texImage2D(
+            gl.TEXTURE_2D,
+             0,
+             gl.RGBA,
+             this.lightDepthTextureSize,
+             this.lightDepthTextureSize,
+             0,
+             gl.RGBA,
+            gl.UNSIGNED_BYTE,
+             null,
+         );
+         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+         // attach it to the framebuffer
+         gl.framebufferTexture2D(
+             gl.FRAMEBUFFER,        // target
+             gl.COLOR_ATTACHMENT0,  // attachment point
+             gl.TEXTURE_2D,         // texture target
+             this.unusedTexture,         // texture
+             0);                    // mip level
+         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+     }
 
     // NOTE: still need to figure out how to get camera to be angled
     // sets camera to be in player's pov (follows player)
@@ -256,6 +248,8 @@ export class BeachScene extends Scene {
     //         program_state.set_camera(desired);
     //     }
     // }
+
+
 
     //Draws a single block of sand and moves the sand_transform to the next block
     draw_sand(context, program_state, sand_transform) {
@@ -324,74 +318,14 @@ export class BeachScene extends Scene {
         }
     }
 
-    display(context, program_state) {
-        // display():  Called once per frame of animation.
-        // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
+    render_scene(context, program_state, shadow_pass, draw_light_source = false, draw_shadow= false)
+    {
+        // shadow_pass: true if this is the second pass that draw the shadow.
+        // draw_light_source: true if we want to draw the light source.
+        // draw_shadow: true if we want to draw the shadow
+        const t = program_state.animation_time/1000;
+        program_state.draw_shadow = draw_shadow;
 
-        // const gl = context.context;
-        //
-        // if (!this.init_ok) {
-        //     const ext = gl.getExtension('WEBGL_depth_texture');
-        //     if (!ext) {
-        //         return alert('need WEBGL_depth_texture');  // eslint-disable-line
-        //     }
-        //     this.texture_buffer_init(gl);
-        //
-        //     this.init_ok = true;
-        // }
-
-        if (!context.scratchpad.controls) {
-            this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
-            // Define the global camera and projection matrices, which are stored in program_state.
-            program_state.set_camera(Mat4.translation(1.33, -2.13, -20));
-            // program_state.set_camera(Mat4.translation(0, -0.8, -20));
-            // program_state.set_camera(this.initial_camera_location);
-        }
-
-        if(this.attached){
-            if(this.attached() == this.initial_camera_location) {
-                let location = this.initial_camera_location;
-                // program_state.set_camera(Mat4.inverse(location));
-                program_state.set_camera(location);
-            }
-        }
-
-
-        program_state.projection_transform = Mat4.perspective(
-            Math.PI / 4, context.width / context.height, .1, 100000);
-
-
-        const t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
-
-        const angle = Math.sin(t);
-        let light_position = Mat4.rotation(angle, 1, 0, 0).times(vec4(8, 6, 1, 0));
-        program_state.lights = [new Light(vec4(0, 8, 0, 1), color(1, 1, 1, 1), 1000000)];
-
-        // this.light_view_target = vec4(0, 0, 0, 1);
-        // this.light_field_of_view = 130 * Math.PI / 180; // 130 degree
-        // //
-        // program_state.lights = [new Light(vec4(0, 8, 0, 1), color(1, 1, 1, 1), 1000)];
-        // // // program_state.lights = [new Light(this.light_position, this.light_color, 1000)];
-        // //
-        // // // Step 1: set the perspective and camera to the POV of light
-        // const light_view_mat = Mat4.look_at(
-        //     vec3(this.light_position[0], this.light_position[1], this.light_position[2]),
-        //     vec3(this.light_view_target[0], this.light_view_target[1], this.light_view_target[2]),
-        //     // vec3(this.light_view_target[0], this.light_view_target[1], this.light_view_target[2]),
-        //     vec3(0, 1, 0), // assume the light to target will have a up dir of +y, maybe need to change according to your case
-        // );
-        // const light_proj_mat = Mat4.perspective(this.light_field_of_view, 1, 0.5, 500);
-        // // Bind the Depth Texture Buffer
-        // // gl.bindFramebuffer(gl.FRAMEBUFFER, this.lightDepthFramebuffer);
-        // // gl.viewport(0, 0, this.lightDepthTextureSize, this.lightDepthTextureSize);
-        // // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        // // // Prepare uniforms
-        // // program_state.light_view_mat = light_view_mat;
-        // // program_state.light_proj_mat = light_proj_mat;
-        // // program_state.light_tex_mat = light_proj_mat;
-        // // program_state.view_mat = light_view_mat;
-        // // program_state.projection_transform = light_proj_mat;
-        // // this.render_scene(context, program_state, false,false, false);
 
         let wind_time = 0
         if (this.wind) {
@@ -431,14 +365,6 @@ export class BeachScene extends Scene {
 
 
 
-        // Sun Lighting
-        // The parameters of the Light are: position, color, size
-        // const angle = Math.sin(t);
-        // const light_position = Mat4.rotation(angle, 1, 0, 0).times(vec4(8, 6, 1, 0));
-        // program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 100000000000)];
-
-
-
         // program_state.lights = [new Light(vec4(0, 0, 0, 1), color(1.0, Math.abs((Math.sin(Math.PI*(t/20)))), Math.abs((Math.sin(Math.PI*(t/20)))), 1.0), 10)];
         // const light_position = Mat4.rotation(angle, 1, 0, 0).times(vec4(0, 0, 1, 0));
         // program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000000)];
@@ -449,7 +375,7 @@ export class BeachScene extends Scene {
         }
 
         //Sand, water, sky transforms
-            //Sand and water transform stretches sand & water to take up the whole beach
+        //Sand and water transform stretches sand & water to take up the whole beach
         let sand_transform = Mat4.identity();
         sand_transform     = sand_transform.times(Mat4.translation(-22, -2, 5))
             .times(Mat4.scale(1,-1.5,10));
@@ -688,48 +614,120 @@ export class BeachScene extends Scene {
         }
 
         if (this.rain) {
-                let rain_t = Mat4.identity()
-                rain_t = rain_t.times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-330, this.move_rain(7-(12*t)), 0))
+            let rain_t = Mat4.identity()
+            rain_t = rain_t.times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-330, this.move_rain(7-(12*t)), 0))
+            this.shapes.cube.draw(context, program_state, rain_t, this.materials.rain)
+            let rain_t1 = Mat4.identity().times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-330, this.move_rain(1-(12*t)), 0))
+            this.shapes.cube.draw(context, program_state, rain_t1, this.materials.rain)
+            let rain_t2 = Mat4.identity().times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-330, this.move_rain(13-(12*t)), 0))
+            this.shapes.cube.draw(context, program_state, rain_t2, this.materials.rain)
+            let rain_t3 = Mat4.identity()
+            rain_t3 = rain_t3.times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-315, this.move_rain(8-(12*t)), 0))
+            this.shapes.cube.draw(context, program_state, rain_t3, this.materials.rain)
+            let rain_t4 = Mat4.identity().times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-315, this.move_rain(2-(12*t)), 0))
+            this.shapes.cube.draw(context, program_state, rain_t4, this.materials.rain)
+            let rain_t5 = Mat4.identity().times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-315, this.move_rain(14-(12*t)), 0))
+            this.shapes.cube.draw(context, program_state, rain_t5, this.materials.rain)
+            let rain_t6 = Mat4.identity()
+            rain_t6 = rain_t6.times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-300, this.move_rain(9-(12*t)), 0))
+            this.shapes.cube.draw(context, program_state, rain_t6, this.materials.rain)
+            let rain_t7 = Mat4.identity().times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-300, this.move_rain(3-(12*t)), 0))
+            this.shapes.cube.draw(context, program_state, rain_t7, this.materials.rain)
+            let rain_t8 = Mat4.identity().times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-300, this.move_rain(15-(12*t)), 0))
+            this.shapes.cube.draw(context, program_state, rain_t8, this.materials.rain)
+            for (let i = 0; i < 15; i++) {
+                rain_t = rain_t.times(Mat4.translation(45, 0, 0))
+                rain_t1 = rain_t1.times(Mat4.translation(45, 0, 0))
+                rain_t2 = rain_t2.times(Mat4.translation(45, 0, 0))
+                rain_t3 = rain_t3.times(Mat4.translation(45, 0, 0))
+                rain_t4 = rain_t4.times(Mat4.translation(45, 0, 0))
+                rain_t5 = rain_t5.times(Mat4.translation(45, 0, 0))
+                rain_t6 = rain_t6.times(Mat4.translation(45, 0, 0))
+                rain_t7 = rain_t7.times(Mat4.translation(45, 0, 0))
+                rain_t8 = rain_t8.times(Mat4.translation(45, 0, 0))
                 this.shapes.cube.draw(context, program_state, rain_t, this.materials.rain)
-                let rain_t1 = Mat4.identity().times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-330, this.move_rain(1-(12*t)), 0))
                 this.shapes.cube.draw(context, program_state, rain_t1, this.materials.rain)
-                let rain_t2 = Mat4.identity().times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-330, this.move_rain(13-(12*t)), 0))
                 this.shapes.cube.draw(context, program_state, rain_t2, this.materials.rain)
-                let rain_t3 = Mat4.identity()
-                rain_t3 = rain_t3.times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-315, this.move_rain(8-(12*t)), 0))
                 this.shapes.cube.draw(context, program_state, rain_t3, this.materials.rain)
-                let rain_t4 = Mat4.identity().times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-315, this.move_rain(2-(12*t)), 0))
                 this.shapes.cube.draw(context, program_state, rain_t4, this.materials.rain)
-                let rain_t5 = Mat4.identity().times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-315, this.move_rain(14-(12*t)), 0))
                 this.shapes.cube.draw(context, program_state, rain_t5, this.materials.rain)
-                let rain_t6 = Mat4.identity()
-                rain_t6 = rain_t6.times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-300, this.move_rain(9-(12*t)), 0))
                 this.shapes.cube.draw(context, program_state, rain_t6, this.materials.rain)
-                let rain_t7 = Mat4.identity().times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-300, this.move_rain(3-(12*t)), 0))
                 this.shapes.cube.draw(context, program_state, rain_t7, this.materials.rain)
-                let rain_t8 = Mat4.identity().times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-300, this.move_rain(15-(12*t)), 0))
                 this.shapes.cube.draw(context, program_state, rain_t8, this.materials.rain)
-                for (let i = 0; i < 15; i++) {
-                    rain_t = rain_t.times(Mat4.translation(45, 0, 0))
-                    rain_t1 = rain_t1.times(Mat4.translation(45, 0, 0))
-                    rain_t2 = rain_t2.times(Mat4.translation(45, 0, 0))
-                    rain_t3 = rain_t3.times(Mat4.translation(45, 0, 0))
-                    rain_t4 = rain_t4.times(Mat4.translation(45, 0, 0))
-                    rain_t5 = rain_t5.times(Mat4.translation(45, 0, 0))
-                    rain_t6 = rain_t6.times(Mat4.translation(45, 0, 0))
-                    rain_t7 = rain_t7.times(Mat4.translation(45, 0, 0))
-                    rain_t8 = rain_t8.times(Mat4.translation(45, 0, 0))
-                    this.shapes.cube.draw(context, program_state, rain_t, this.materials.rain)
-                    this.shapes.cube.draw(context, program_state, rain_t1, this.materials.rain)
-                    this.shapes.cube.draw(context, program_state, rain_t2, this.materials.rain)
-                    this.shapes.cube.draw(context, program_state, rain_t3, this.materials.rain)
-                    this.shapes.cube.draw(context, program_state, rain_t4, this.materials.rain)
-                    this.shapes.cube.draw(context, program_state, rain_t5, this.materials.rain)
-                    this.shapes.cube.draw(context, program_state, rain_t6, this.materials.rain)
-                    this.shapes.cube.draw(context, program_state, rain_t7, this.materials.rain)
-                    this.shapes.cube.draw(context, program_state, rain_t8, this.materials.rain)
-                }
             }
+        }
+
+
+    }
+
+
+    display(context, program_state) {
+        // display():  Called once per frame of animation.
+        // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
+
+        const t = program_state.animation_time;
+        const gl = context.context;
+        //
+        if (!this.init_ok) {
+             const ext = gl.getExtension('WEBGL_depth_texture');
+             if (!ext) {
+                 return alert('need WEBGL_depth_texture');  // eslint-disable-line
+             }
+             this.texture_buffer_init(gl);
+
+             this.init_ok = true;
+        }
+
+        if (!context.scratchpad.controls) {
+            this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
+            // Define the global camera and projection matrices, which are stored in program_state.
+            program_state.set_camera(Mat4.translation(1.33, -2.13, -20));
+            // program_state.set_camera(Mat4.translation(0, -0.8, -20));
+            // program_state.set_camera(this.initial_camera_location);
+        }
+
+
+        program_state.projection_transform = Mat4.perspective(
+            Math.PI / 4, context.width / context.height, .1, 100000);
+
+
+
+        const angle = Math.sin(t);
+        /*
+        let light_position = Mat4.rotation(angle, 1, 0, 0).times(vec4(8, 6, 1, 0));
+        program_state.lights = [new Light(vec4(0, 8, 0, 1), color(1, 1, 1, 1), 1000000)];
+        */
+
+        this.light_position = Mat4.rotation(angle, 1,0,0).times(vec4(8,6,1,0));
+        this.light_view_target = vec4(0, 0, 0, 1);
+        this.light_field_of_view = 130 * Math.PI / 180; // 130 degree
+        // //
+        // program_state.lights = [new Light(vec4(0, 8, 0, 1), color(1, 1, 1, 1), 1000)];
+        program_state.lights = [new Light(this.light_position, color(1,1,1,1), 1000)];
+        // //
+
+
+        // // // Step 1: set the perspective and camera to the POV of light
+        //const light_view_mat = Mat4.look_at(
+             //vec3(this.light_position[0], this.light_position[1], this.light_position[2]),
+             //vec3(this.light_view_target[0], this.light_view_target[1], this.light_view_target[2]),
+             // vec3(this.light_view_target[0], this.light_view_target[1], this.light_view_target[2]),
+            // vec3(0, 1, 0), // assume the light to target will have a up dir of +y, maybe need to change according to your case
+        //);
+       // const light_proj_mat = Mat4.perspective(this.light_field_of_view, 1, 0.5, 500);
+        // // Bind the Depth Texture Buffer
+        //gl.bindFramebuffer(gl.FRAMEBUFFER, this.lightDepthFramebuffer);
+        //gl.viewport(0, 0, this.lightDepthTextureSize, this.lightDepthTextureSize);
+       // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        // // // Prepare uniforms
+       // program_state.light_view_mat = light_view_mat;
+       // program_state.light_proj_mat = light_proj_mat;
+       // program_state.light_tex_mat = light_proj_mat;
+        //program_state.view_mat = light_view_mat;
+       // program_state.projection_transform = light_proj_mat;
+        this.render_scene(context, program_state, false,false, false);
+
+
 
     }
 }
