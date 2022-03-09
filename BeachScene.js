@@ -80,9 +80,6 @@ export class BeachScene extends Scene {
         this.light_position = 0;
         this.sun_move = false;
         this.wind = false;
-        // this.chair_position; 
-        // this.umbrella_positions; 
-        //console.log(this.chair_position)
         this.cloud1_pos = -13
         this.cloud2_pos = -6.5
         this.cloud3_pos = -1
@@ -110,16 +107,14 @@ export class BeachScene extends Scene {
         this.rain = false
 
         this.init_ok = false;
-        //
-
 
         // // For the first pass
         this.pure = new Material(new Color_Phong_Shader(), {
         })
         // // For light source
-        // this.light_src = new Material(new defs.Phong_Shader(), {
-        //     color: color(1, 1, 1, 1), ambient: 1, diffusivity: 0, specularity: 0
-        // });
+        this.light_src = new Material(new defs.Phong_Shader(), {
+             color: color(1, 1, 1, 1), ambient: 1, diffusivity: 0, specularity: 0
+        });
         // // For depth texture display
         this.depth_tex =  new Material(new Depth_Texture_Shader_2D(), {
             color: color(0, 0, .0, 1),
@@ -325,7 +320,6 @@ export class BeachScene extends Scene {
         // draw_shadow: true if we want to draw the shadow
         const t = program_state.animation_time/1000;
         program_state.draw_shadow = draw_shadow;
-
 
         let wind_time = 0
         if (this.wind) {
@@ -687,6 +681,7 @@ export class BeachScene extends Scene {
         }
 
 
+        //TODO: START HERE
         program_state.projection_transform = Mat4.perspective(
             Math.PI / 4, context.width / context.height, .1, 100000);
 
@@ -708,23 +703,18 @@ export class BeachScene extends Scene {
 
 
         // // // Step 1: set the perspective and camera to the POV of light
-        //const light_view_mat = Mat4.look_at(
-             //vec3(this.light_position[0], this.light_position[1], this.light_position[2]),
-             //vec3(this.light_view_target[0], this.light_view_target[1], this.light_view_target[2]),
-             // vec3(this.light_view_target[0], this.light_view_target[1], this.light_view_target[2]),
-            // vec3(0, 1, 0), // assume the light to target will have a up dir of +y, maybe need to change according to your case
-        //);
-       // const light_proj_mat = Mat4.perspective(this.light_field_of_view, 1, 0.5, 500);
+        //const light_view_mat = this.initial_camera_location;
+        //const light_proj_mat = Mat4.perspective(this.light_field_of_view, 1, 0.5, 500);
         // // Bind the Depth Texture Buffer
         //gl.bindFramebuffer(gl.FRAMEBUFFER, this.lightDepthFramebuffer);
         //gl.viewport(0, 0, this.lightDepthTextureSize, this.lightDepthTextureSize);
-       // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        //gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         // // // Prepare uniforms
-       // program_state.light_view_mat = light_view_mat;
-       // program_state.light_proj_mat = light_proj_mat;
-       // program_state.light_tex_mat = light_proj_mat;
+        //program_state.light_view_mat = light_view_mat;
+        //program_state.light_proj_mat = light_proj_mat;
+        //program_state.light_tex_mat = light_proj_mat;
         //program_state.view_mat = light_view_mat;
-       // program_state.projection_transform = light_proj_mat;
+        //program_state.projection_transform = light_proj_mat;
         this.render_scene(context, program_state, false,false, false);
 
 
