@@ -76,7 +76,11 @@
       <workItem from="1646860890272" duration="1158000" />
       <workItem from="1646862067249" duration="4048000" />
       <workItem from="1646866179330" duration="276000" />
-      <workItem from="1646866697418" duration="751000" />
+      <workItem from="1646866697418" duration="1492000" />
+      <workItem from="1646887495594" duration="225000" />
+      <workItem from="1646887968703" duration="1256000" />
+      <workItem from="1646889323845" duration="223000" />
+      <workItem from="1646890496799" duration="1472000" />
     </task>
     <servers />
   </component>
@@ -93,5 +97,17 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/BeachScene.js</url>
+          <line>24</line>
+          <properties lambdaOrdinal="-1" />
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

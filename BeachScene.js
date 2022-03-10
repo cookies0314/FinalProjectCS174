@@ -57,6 +57,12 @@ export class BeachScene extends Scene {
             cloudMat: new Material(bump, {ambient: 1, specularity: 0, texture: new Texture("assets/cloud.jpg")}),
             texturedBeachBall:  new Material(bump, {ambient: 1, texture: new Texture("assets/beachball.jpg")}),
 
+            shadow_text_Ball: new Material(new Shadow_Textured_Phong_Shader(1),{
+                color: color(.5,.5,.5,1),
+                ambient: .4, diffusivity: .5, specularity: .5,
+                color_texture: new Texture("assets/beachball.jpg"),
+                light_depth_texture: null
+            }),
 
             umbrellaMat: new Material(bump, {ambient: 1, specularity: 0, texture: new Texture("assets/umbrella.jpg")}),
             chairMat: new Material(bump, {ambient: 1, specularity: 0, texture: new Texture("assets/chairtexture.jpg")}),
@@ -171,7 +177,7 @@ export class BeachScene extends Scene {
          this.lightDepthTexture = gl.createTexture();
          // Bind it to TinyGraphics
          this.light_depth_texture = new Buffered_Texture(this.lightDepthTexture);
-         //this.texturedBeachBall.light_depth_texture = this.light_depth_texture;
+         this.materials.shadow_text_Ball.light_depth_texture = this.lightDepthTexture
     //     // this.floor.light_depth_texture = this.light_depth_texture
 
          this.lightDepthTextureSize = LIGHT_DEPTH_TEX_SIZE;
@@ -230,6 +236,8 @@ export class BeachScene extends Scene {
              0);                    // mip level
          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
      }
+
+
 
     // NOTE: still need to figure out how to get camera to be angled
     // sets camera to be in player's pov (follows player)
@@ -485,7 +493,7 @@ export class BeachScene extends Scene {
             if (this.rain) {
                 this.shapes.beachBall.draw(context, program_state, beachBall_transform, this.materials.texturedBeachBall.override({ambient: 0.9}));
             } else {
-                this.shapes.beachBall.draw(context, program_state, beachBall_transform, this.materials.texturedBeachBall);
+                this.shapes.beachBall.draw(context, program_state, beachBall_transform, shadow_pass? this.materials.shadow_text_Ball: this.pure);
             }
         }
 
@@ -509,6 +517,13 @@ export class BeachScene extends Scene {
                 this.shapes.umbrella.draw(context, program_state, umbrella_transform, this.materials.umbrellaMat);
             }
         }
+
+        /*
+        let test_ball_transform = Mat4.identity();
+        test_ball_transform = test_ball_transform.times(Mat4.translation(-5,7,0));
+        this.shapes.beachBall.draw(context,program_state,test_ball_transform, shadow_pass? this.materials.shadow_text_Ball: this.pure);
+        */
+
 
         //Cloud
         if (this.wind) {
@@ -682,42 +697,53 @@ export class BeachScene extends Scene {
 
 
         //TODO: START HERE
-        program_state.projection_transform = Mat4.perspective(
-            Math.PI / 4, context.width / context.height, .1, 100000);
+
+        //program_state.projection_transform = Mat4.perspective(
+            //Math.PI / 4, context.width / context.height, .1, 100000);
+        //VOID THIS^^
 
 
 
-        const angle = Math.sin(t);
-        /*
-        let light_position = Mat4.rotation(angle, 1, 0, 0).times(vec4(8, 6, 1, 0));
-        program_state.lights = [new Light(vec4(0, 8, 0, 1), color(1, 1, 1, 1), 1000000)];
-        */
+        const angle = Math.sin(t); //maybe change this???
 
-        this.light_position = Mat4.rotation(angle, 1,0,0).times(vec4(8,6,1,0));
+        this.light_position = Mat4.translation(0,8,0).times(vec4(3, 6, 0, 1));
+        program_state.lights = [new Light(this.light_position, color(1, 1, 1, 1), 1000)];
         this.light_view_target = vec4(0, 0, 0, 1);
         this.light_field_of_view = 130 * Math.PI / 180; // 130 degree
-        // //
+
+
         // program_state.lights = [new Light(vec4(0, 8, 0, 1), color(1, 1, 1, 1), 1000)];
-        program_state.lights = [new Light(this.light_position, color(1,1,1,1), 1000)];
+        //program_state.lights = [new Light(this.light_position, color(1,1,1,1), 1000)];
         // //
 
 
         // // // Step 1: set the perspective and camera to the POV of light
         //const light_view_mat = this.initial_camera_location;
-        //const light_proj_mat = Mat4.perspective(this.light_field_of_view, 1, 0.5, 500);
+        const light_view_mat = Mat4.look_at(
+            vec3(this.light_position[0], this.light_position[1], this.light_position[2]),
+            vec3(this.light_view_target[0], this.light_view_target[1], this.light_view_target[2]),
+            vec3(0, 1, 0), // assume the light to target will have a up dir of +y, maybe need to change according to your case
+        );
+        const light_proj_mat = Mat4.perspective(this.light_field_of_view, 1, 0.5, 500);
         // // Bind the Depth Texture Buffer
-        //gl.bindFramebuffer(gl.FRAMEBUFFER, this.lightDepthFramebuffer);
-        //gl.viewport(0, 0, this.lightDepthTextureSize, this.lightDepthTextureSize);
-        //gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.lightDepthFramebuffer);
+        gl.viewport(0, 0, this.lightDepthTextureSize, this.lightDepthTextureSize);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         // // // Prepare uniforms
-        //program_state.light_view_mat = light_view_mat;
-        //program_state.light_proj_mat = light_proj_mat;
-        //program_state.light_tex_mat = light_proj_mat;
-        //program_state.view_mat = light_view_mat;
-        //program_state.projection_transform = light_proj_mat;
+        program_state.light_view_mat = light_view_mat;
+        program_state.light_proj_mat = light_proj_mat;
+        program_state.light_tex_mat = light_proj_mat;
+        program_state.view_mat = light_view_mat;
+        program_state.projection_transform = light_proj_mat;
         this.render_scene(context, program_state, false,false, false);
 
 
+        // Step 2: unbind, draw to the canvas
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        program_state.view_mat = program_state.camera_inverse;
+        program_state.projection_transform = Mat4.perspective(Math.PI / 4, context.width / context.height, 0.5, 500);
+        this.render_scene(context, program_state, true,true, true);
 
     }
 }
