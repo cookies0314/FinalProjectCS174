@@ -146,6 +146,9 @@ export class BeachScene extends Scene {
             rain: new Material(new defs.Phong_Shader(),{ambient: 1, diffusivity: 0, specularity: 0, color: color(0.157, 0.573, 0.761, 1)}),
         }
 
+        this.audio = new Audio("assets/beachsounds.mp3");
+        this.music_on = false;
+
         this.initial_camera_location = Mat4.look_at(vec3(1, 0, 0), vec3(0, 0, 1), vec3(0, 1, 0));
         this.light_position = 0;
         this.sun_move = false;
@@ -218,6 +221,10 @@ export class BeachScene extends Scene {
             this.waves = !this.waves
         })
 
+        this.key_triggered_button("Toggle Sun/Moon Movement", ["b"], () => {
+            this.sun_move = !this.sun_move
+        })
+
         this.new_line()
         this.new_line()
 
@@ -232,11 +239,17 @@ export class BeachScene extends Scene {
         this.new_line()
         this.new_line()
 
+        this.key_triggered_button("Toggle Music", ["m"], () => {
+            this.music_on = !this.music_on
+        })
+
         this.key_triggered_button("Reset", ["r"], () => {
             this.wind = false
             this.rain = false
             this.waves = false
             this.night = false
+            this.music_on = false
+            this.sun_move = false
         });
     }
 
@@ -389,6 +402,16 @@ export class BeachScene extends Scene {
 
         program_state.draw_shadow = draw_shadow;
 
+        //Music
+        if(this.music_on)
+        {
+            this.audio.play();
+        }
+        else
+        {
+            this.audio.pause();
+        }
+
         //Drawing Sun/Moon/Light Source
         /*
         //  Create Sun
@@ -424,6 +447,9 @@ export class BeachScene extends Scene {
         }
         */
         //MAKE SUN MORE REALISTIC
+        let sun_transform = Mat4.identity();
+
+
         if(!this.night)
         {
             if (draw_light_source && shadow_pass) {
@@ -756,7 +782,7 @@ export class BeachScene extends Scene {
     }
 
     display(context, program_state) {
-        const t = program_state.animation_time;
+        const t = program_state.animation_time/1000;
         const gl = context.context;
 
         if (!this.init_ok) {
@@ -769,7 +795,6 @@ export class BeachScene extends Scene {
             this.init_ok = true;
         }
 
-        //TODO: THIS TOO
         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
@@ -783,11 +808,16 @@ export class BeachScene extends Scene {
             program_state.set_camera(Mat4.translation(1.33, -3.13, -20));
         }
 
-        //TODO: THIS PART HERE!!!!
-        // The position of the light --> declaring position of light
-        let light_transform = Mat4.identity();
+       //Lights
+        if(this.sun_move)
+        {
+            this.light_position = Mat4.rotation(-.75*t, 0,0,1).times(Mat4.translation(0,10,0).times(vec4(1, -.5, 0, 1)));
+        }
+        else
+        {
+            this.light_position = Mat4.translation(0,10,0).times(vec4(1, -.5, 0, 1));
+        }
 
-        this.light_position = Mat4.translation(0,10,0).times(vec4(1, -.5, 0, 1));
 
         if(!this.night)
         {
