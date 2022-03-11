@@ -326,8 +326,17 @@ export class BeachScene extends Scene {
         // shadow_pass: true if this is the second pass that draw the shadow.
         // draw_light_source: true if we want to draw the light source.
         // draw_shadow: true if we want to draw the shadow
+        let light_position = this.light_position;
+        let light_color = this.light_color;
         const t = program_state.animation_time/1000;
+        
         program_state.draw_shadow = draw_shadow;
+
+        if (draw_light_source && shadow_pass) {
+            this.shapes.sun.draw(context, program_state,
+                Mat4.translation(light_position[0], light_position[1], light_position[2]).times(Mat4.scale(.5,.5,.5)),
+                this.light_src.override({color: light_color}));
+        }
 
         let wind_time = 0
         if (this.wind) {
@@ -707,6 +716,12 @@ export class BeachScene extends Scene {
         const angle = Math.sin(t); //maybe change this???
 
         this.light_position = Mat4.translation(0,8,0).times(vec4(3, 6, 0, 1));
+        this.light_color = color(
+            0.667 + Math.sin(t/500) / 3,
+            0.667 + Math.sin(t/1500) / 3,
+            0.667 + Math.sin(t/3500) / 3,
+            1
+        );
         program_state.lights = [new Light(this.light_position, color(1, 1, 1, 1), 1000)];
         this.light_view_target = vec4(0, 0, 0, 1);
         this.light_field_of_view = 130 * Math.PI / 180; // 130 degree
