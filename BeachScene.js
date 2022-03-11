@@ -538,37 +538,49 @@ export class BeachScene extends Scene {
         //Chair
         let chair_transform = Mat4.identity();
         chair_transform = chair_transform.times(Mat4.translation(-8.5, 0.75, 3)).times(Mat4.scale(0.6,0.6,0.6));
+        let chair_transform1 = chair_transform.times(Mat4.translation(0, 0, 8));
         if (this.night){
             this.shapes.beachChair.draw(context, program_state, chair_transform, shadow_pass? this.materials.shadow_chair_mat.override({ambient: 0.2}) : this.pure)
+            this.shapes.beachChair.draw(context, program_state, chair_transform1, shadow_pass? this.materials.shadow_chair_mat.override({ambient: 0.2}) : this.pure)
         } else {
             if (this.rain) {
                 this.shapes.beachChair.draw(context, program_state, chair_transform, shadow_pass? this.materials.shadow_chair_mat.override({ambient: 0.35}) : this.pure)
+                this.shapes.beachChair.draw(context, program_state, chair_transform1, shadow_pass? this.materials.shadow_chair_mat.override({ambient: 0.35}) : this.pure)
             } else {
                 this.shapes.beachChair.draw(context, program_state, chair_transform, shadow_pass? this.materials.shadow_chair_mat : this.pure)
+                this.shapes.beachChair.draw(context, program_state, chair_transform1, shadow_pass? this.materials.shadow_chair_mat : this.pure)
             }
         }
         //BeachBall
         let beachBall_transform = Mat4.identity();
         beachBall_transform = beachBall_transform.times(Mat4.translation(-3, 0, 3)).times(Mat4.scale(0.5,0.5,0.5));
+        let beachBall_transform1 = beachBall_transform.times(Mat4.translation(0, 0, 9));
 
         if (this.wind) {
             if (-2*wind_time > -7.85) {
                 beachBall_transform = beachBall_transform.times(Mat4.translation(-2*wind_time, 0 , 0))
                 beachBall_transform = beachBall_transform.times(Mat4.rotation(2*wind_time, 0, 0, 1))
+                beachBall_transform1 = beachBall_transform1.times(Mat4.translation(-2*wind_time, 0 , 0))
+                beachBall_transform1 = beachBall_transform1.times(Mat4.rotation(2*wind_time, 0, 0, 1))
                 this.ball_roll = 2*wind_time
             } else {
                 beachBall_transform = beachBall_transform.times(Mat4.translation(-7.85, 0 , 0))
                 beachBall_transform = beachBall_transform.times(Mat4.rotation(this.ball_roll, 0, 0, 1))
+                beachBall_transform1 = beachBall_transform1.times(Mat4.translation(-7.85, 0 , 0))
+                beachBall_transform1 = beachBall_transform1.times(Mat4.rotation(this.ball_roll, 0, 0, 1))
             }
         }
 
         if (this.night) {
             this.shapes.beachBall.draw(context, program_state, beachBall_transform, shadow_pass? this.materials.shadow_text_Ball.override({ambient : 0.2}) : this.pure);
+            this.shapes.beachBall.draw(context, program_state, beachBall_transform1, shadow_pass? this.materials.shadow_text_Ball.override({ambient : 0.2}) : this.pure);
         } else {
             if (this.rain) {
                 this.shapes.beachBall.draw(context, program_state, beachBall_transform, shadow_pass? this.materials.shadow_text_Ball.override({ambient : 0.35}) : this.pure);
+                this.shapes.beachBall.draw(context, program_state, beachBall_transform1, shadow_pass? this.materials.shadow_text_Ball.override({ambient : 0.35}) : this.pure);
             } else {
                 this.shapes.beachBall.draw(context, program_state, beachBall_transform, shadow_pass? this.materials.shadow_text_Ball : this.pure);
+                this.shapes.beachBall.draw(context, program_state, beachBall_transform1, shadow_pass? this.materials.shadow_text_Ball : this.pure);
             }
         }
 
@@ -584,13 +596,18 @@ export class BeachScene extends Scene {
         }
 
         umbrella_transform = umbrella_transform.times(Mat4.translation(0, 0, 4))
+        let umbrella_transform1 = umbrella_transform.times(Mat4.translation(0, -5, 0))
+
         if (this.night) {
             this.shapes.umbrella.draw(context, program_state, umbrella_transform, shadow_pass? this.materials.shadow_umbrella_mat.override({ambient : 0.2}) : this.pure);
+            this.shapes.umbrella.draw(context, program_state, umbrella_transform1, shadow_pass? this.materials.shadow_umbrella_mat.override({ambient : 0.2}) : this.pure);
         } else {
             if (this.rain) {
                 this.shapes.umbrella.draw(context, program_state, umbrella_transform, shadow_pass? this.materials.shadow_umbrella_mat.override({ambient : 0.35}) : this.pure);
+                this.shapes.umbrella.draw(context, program_state, umbrella_transform1, shadow_pass? this.materials.shadow_umbrella_mat.override({ambient : 0.35}) : this.pure);
             } else {
                 this.shapes.umbrella.draw(context, program_state, umbrella_transform, shadow_pass? this.materials.shadow_umbrella_mat: this.pure);
+                this.shapes.umbrella.draw(context, program_state, umbrella_transform1, shadow_pass? this.materials.shadow_umbrella_mat: this.pure);
             }
         }
 
