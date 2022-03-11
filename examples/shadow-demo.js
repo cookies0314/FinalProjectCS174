@@ -148,7 +148,7 @@ export class Shadow_Demo extends Scene {
 
         this.initial_camera_location = Mat4.look_at(vec3(1, 0, 0), vec3(0, 0, 1), vec3(0, 1, 0));
         this.light_position = 0;
-        this.mirror = new Mirror(Vec.of(170, -49, -170), 80);
+        this.mirror = new Mirror(Vec.of(7, 8, -0), 80);
         this.sun_move = false;
         this.wind = false;
         this.cloud1_pos = -13
