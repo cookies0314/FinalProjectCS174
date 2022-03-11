@@ -779,16 +779,65 @@ const Textured_Phong = defs.Textured_Phong =
     }
 
 
-const MirrorShader = defs.MirrorShader =
-    class MirrorShader extends Phong_Shader {
+const ReflectionShader = defs.ReflectionShader =
+    class ReflectionShader extends Phong_Shader {
         constructor(num_lights = 2) {
             super(num_lights);
+        }
+
+        shared_glsl_code() {
+            // ********* SHARED CODE, INCLUDED IN BOTH SHADERS *********
+            return  ` precision mediump float;
+            const int N_LIGHTS = ` +
+            this.num_lights +
+          `;
+            uniform float ambient, diffusivity, specularity, smoothness;
+            uniform vec4 light_positions_or_vectors[N_LIGHTS], light_colors[N_LIGHTS];
+            uniform float light_attenuation_factors[N_LIGHTS];
+            uniform vec4 shape_color;
+            uniform vec3 squared_scale, camera_center;
+                                  // Specifier "varying" means a variable's final value will be passed from the vertex shader
+                                  // on to the next phase (fragment shader), then interpolated per-fragment, weighted by the
+                                  // pixel fragment's proximity to each of the 3 vertices (barycentric interpolation).
+            varying vec3 N, vertex_worldspace;
+            varying vec4 eyespace_pos;
+            uniform vec4 clip_plane;
+                                                 // ***** PHONG SHADING HAPPENS HERE: *****                                       
+            vec3 phong_model_lights( vec3 N, vec3 vertex_worldspace, vec4 tex_color )
+              {                                        // phong_model_lights():  Add up the lights' contributions.
+                vec3 E = normalize( camera_center - vertex_worldspace );
+                vec3 result = vec3( 0.0 );
+                for(int i = 0; i < N_LIGHTS; i++)
+                  {
+                                // Lights store homogeneous coords - either a position or vector.  If w is 0, the 
+                                // light will appear directional (uniform direction from all points), and we 
+                                // simply obtain a vector towards the light by directly using the stored value.
+                                // Otherwise if w is 1 it will appear as a point light -- compute the vector to 
+                                // the point light's location from the current surface point.  In either case, 
+                                // fade (attenuate) the light as the vector needed to reach it gets longer.  
+                    vec3 surface_to_light_vector = light_positions_or_vectors[i].xyz - 
+                                                   light_positions_or_vectors[i].w * vertex_worldspace;                                             
+                    float distance_to_light = length( surface_to_light_vector );
+                    vec3 L = normalize( surface_to_light_vector );
+                    vec3 H = normalize( L + E );
+                                                      // Compute the diffuse and specular components from the Phong
+                                                      // Reflection Model, using Blinn's "halfway vector" method:
+                    float diffuse  =      max( dot( N, L ), 0.0 );
+                    float specular = pow( max( dot( N, H ), 0.0 ), smoothness );
+                    float attenuation = 1.0 / (1.0 + light_attenuation_factors[i] * distance_to_light * distance_to_light );
+                    
+                    
+                    vec3 light_contribution = (shape_color.xyz + tex_color.xyz) * light_colors[i].xyz * diffusivity * diffuse
+                                                              + light_colors[i].xyz * specularity * specular;
+                    result += attenuation * light_contribution;
+                  }
+                return result;
+              } `;
         }
         
         vertex_glsl_code() {
             // ********* VERTEX SHADER *********
-            return (
-                this.shared_glsl_code() +
+            return this.shared_glsl_code() +
                 `
                 varying vec4 clip_space;
                 attribute vec3 position, normal;  // Position is expressed in object coordinates.
@@ -804,27 +853,71 @@ const MirrorShader = defs.MirrorShader =
                 vertex_worldspace = ( model_transform * vec4( position, 1.0 ) ).xyz;
                 // The final normal vector in screen space.
                 } `
-            );
+            ;
         }
+
+
         fragment_glsl_code() {
             // ********* FRAGMENT SHADER *********
             // A fragment is a pixel that's overlapped by the current triangle.
             // Fragments affect the final image or get discarded due to depth.
-            return (
-                this.shared_glsl_code() +
-                `
-                varying vec4 clip_space;
-                uniform sampler2D reflection_texture;
-                void main()
-                {           
-                vec2 ndc = (clip_space.xy / clip_space.w) / 2.0 + 0.5;
-                vec2 reflection_tex_coords = vec2(ndc.x, -ndc.y); 
-                vec4 reflection_color = texture2D(reflection_texture, reflection_tex_coords);
-                gl_FragColor = reflection_color;
-                gl_FragColor.xyz += phong_model_lights( vec3(0, 1, 0), vertex_worldspace, vec4(0, 0, 0, 0) );
-                } `
-            );
+            return super.shared_glsl_code() +               
+            `
+            varying vec4 clip_space;
+            vec4 out_color;
+            uniform sampler2D reflection_texture;
+            uniform sampler2D refraction_texture;
+            void main()
+            {
+                vec2 ndc = (clip_space.xy / clip_space.w)/2.0 + 0.5;
+                vec2 refract_coords = vec2(ndc.x, ndc.y);
+                vec2 reflect_coords = vec2(ndc.x, -ndc.y);
+                vec4 reflect_color = texture2D(reflection_texture, reflect_coords);
+                vec4 refract_color = texture2D(refraction_texture, refract_coords);
+                gl_FragColor = mix(reflect_color, refract_color, 0.5);
+                gl_FragColor.xyz += phong_model_lights( vec3(0, 1, 0), vertex_worldspace );
+            }
+            `;
         }
+
+
+        // fragment_glsl_code() {
+        //     // ********* FRAGMENT SHADER *********
+        //     // A fragment is a pixel that's overlapped by the current triangle.
+        //     // Fragments affect the final image or get discarded due to depth.
+        //     // return (
+        //     //     this.shared_glsl_code() +
+        //     //     `
+        //     //     varying vec4 clip_space;
+        //     //     uniform sampler2D reflection_texture;
+        //     //     void main()
+        //     //     {           
+        //     //     vec2 ndc = (clip_space.xy / clip_space.w) / 2.0 + 0.5;
+        //     //     vec2 reflection_tex_coords = vec2(ndc.x, -ndc.y); 
+        //     //     vec4 reflection_color = texture2D(reflection_texture, reflection_tex_coords);
+        //     //     gl_FragColor = reflection_color;
+        //     //     gl_FragColor.xyz += phong_model_lights( vec3(0, 1, 0), vertex_worldspace, vec4(0, 0, 0, 0) );
+        //     //     } `
+        //     // );
+        //     return this.shared_glsl_code() + (
+        //         `
+        //         varying vec4 clip_space;
+        //         vec4 out_color;
+        //         uniform sampler2D reflection_texture;
+        //         uniform sampler2D refraction_texture;
+        //         void main()
+        //         {
+        //             vec2 ndc = (clip_space.xy / clip_space.w)/2.0 + 0.5;
+        //             vec2 refract_coords = vec2(ndc.x, ndc.y);
+        //             vec2 reflect_coords = vec2(ndc.x, -ndc.y);
+        //             vec4 reflect_color = texture2D(reflection_texture, reflect_coords);
+        //             vec4 refract_color = texture2D(refraction_texture, refract_coords);
+        //             gl_FragColor = reflect_color;
+        //             gl_FragColor.xyz += phong_model_lights( vec3(0, 1, 0), vertex_worldspace, vec4(0, 0, 0, 0) );
+        //         }
+        //         `
+        //     );
+        // }
         update_GPU(context, gpu_addresses, gpu_state, model_transform, material) {
             // update_GPU(): Add a little more to the base class's version of this method.
             super.update_GPU(
@@ -934,69 +1027,69 @@ const Movement_Controls = defs.Movement_Controls =
         make_control_panel() {
             // make_control_panel(): Sets up a panel of interactive HTML elements, including
             // buttons with key bindings for affecting this scene, and live info readouts.
-            // this.control_panel.innerHTML += "Click and drag the scene to spin your viewpoint around it.<br>";
-            // this.live_string(box => box.textContent = "- Position: " + this.pos[0].toFixed(2) + ", " + this.pos[1].toFixed(2)
-            //     + ", " + this.pos[2].toFixed(2));
-            // this.new_line();
-            // // The facing directions are surprisingly affected by the left hand rule:
-            // this.live_string(box => box.textContent = "- Facing: " + ((this.z_axis[0] > 0 ? "West " : "East ")
-            //     + (this.z_axis[1] > 0 ? "Down " : "Up ") + (this.z_axis[2] > 0 ? "North" : "South")));
-            // this.new_line();
-            // this.new_line();
-            //
-            // this.key_triggered_button("Up", [" "], () => this.thrust[1] = -1, undefined, () => this.thrust[1] = 0);
-            // this.key_triggered_button("Forward", ["w"], () => this.thrust[2] = 1, undefined, () => this.thrust[2] = 0);
-            // this.new_line();
-            // this.key_triggered_button("Left", ["a"], () => this.thrust[0] = 1, undefined, () => this.thrust[0] = 0);
-            // this.key_triggered_button("Back", ["s"], () => this.thrust[2] = -1, undefined, () => this.thrust[2] = 0);
-            // this.key_triggered_button("Right", ["d"], () => this.thrust[0] = -1, undefined, () => this.thrust[0] = 0);
-            // this.new_line();
-            // this.key_triggered_button("Down", ["z"], () => this.thrust[1] = 1, undefined, () => this.thrust[1] = 0);
-            //
-            // const speed_controls = this.control_panel.appendChild(document.createElement("span"));
-            // speed_controls.style.margin = "30px";
-            // this.key_triggered_button("-", ["o"], () =>
-            //     this.speed_multiplier /= 1.2, undefined, undefined, undefined, speed_controls);
-            // this.live_string(box => {
-            //     box.textContent = "Speed: " + this.speed_multiplier.toFixed(2)
-            // }, speed_controls);
-            // this.key_triggered_button("+", ["p"], () =>
-            //     this.speed_multiplier *= 1.2, undefined, undefined, undefined, speed_controls);
-            // this.new_line();
-            // this.key_triggered_button("Roll left", [","], () => this.roll = 1, undefined, () => this.roll = 0);
-            // this.key_triggered_button("Roll right", ["."], () => this.roll = -1, undefined, () => this.roll = 0);
-            // this.new_line();
-            // this.key_triggered_button("(Un)freeze mouse look around", ["f"], () => this.look_around_locked ^= 1, "#8B8885");
-            // this.new_line();
-            // this.key_triggered_button("Go to world origin", ["r"], () => {
-            //     this.matrix().set_identity(4, 4);
-            //     this.inverse().set_identity(4, 4)
-            // }, "#8B8885");
-            // this.new_line();
-            //
-            // this.key_triggered_button("Look at origin from front", ["1"], () => {
-            //     this.inverse().set(Mat4.look_at(vec3(0, 0, 10), vec3(0, 0, 0), vec3(0, 1, 0)));
-            //     this.matrix().set(Mat4.inverse(this.inverse()));
-            // }, "#8B8885");
-            // this.new_line();
-            // this.key_triggered_button("from right", ["2"], () => {
-            //     this.inverse().set(Mat4.look_at(vec3(10, 0, 0), vec3(0, 0, 0), vec3(0, 1, 0)));
-            //     this.matrix().set(Mat4.inverse(this.inverse()));
-            // }, "#8B8885");
-            // this.key_triggered_button("from rear", ["3"], () => {
-            //     this.inverse().set(Mat4.look_at(vec3(0, 0, -10), vec3(0, 0, 0), vec3(0, 1, 0)));
-            //     this.matrix().set(Mat4.inverse(this.inverse()));
-            // }, "#8B8885");
-            // this.key_triggered_button("from left", ["4"], () => {
-            //     this.inverse().set(Mat4.look_at(vec3(-10, 0, 0), vec3(0, 0, 0), vec3(0, 1, 0)));
-            //     this.matrix().set(Mat4.inverse(this.inverse()));
-            // }, "#8B8885");
-            // this.new_line();
-            // this.key_triggered_button("Attach to global camera", ["Shift", "R"],
-            //     () => {
-            //         this.will_take_over_graphics_state = true
-            //     }, "#8B8885");
-            // this.new_line();
+            this.control_panel.innerHTML += "Click and drag the scene to spin your viewpoint around it.<br>";
+            this.live_string(box => box.textContent = "- Position: " + this.pos[0].toFixed(2) + ", " + this.pos[1].toFixed(2)
+                + ", " + this.pos[2].toFixed(2));
+            this.new_line();
+            // The facing directions are surprisingly affected by the left hand rule:
+            this.live_string(box => box.textContent = "- Facing: " + ((this.z_axis[0] > 0 ? "West " : "East ")
+                + (this.z_axis[1] > 0 ? "Down " : "Up ") + (this.z_axis[2] > 0 ? "North" : "South")));
+            this.new_line();
+            this.new_line();
+            
+            this.key_triggered_button("Up", [" "], () => this.thrust[1] = -1, undefined, () => this.thrust[1] = 0);
+            this.key_triggered_button("Forward", ["w"], () => this.thrust[2] = 1, undefined, () => this.thrust[2] = 0);
+            this.new_line();
+            this.key_triggered_button("Left", ["a"], () => this.thrust[0] = 1, undefined, () => this.thrust[0] = 0);
+            this.key_triggered_button("Back", ["s"], () => this.thrust[2] = -1, undefined, () => this.thrust[2] = 0);
+            this.key_triggered_button("Right", ["d"], () => this.thrust[0] = -1, undefined, () => this.thrust[0] = 0);
+            this.new_line();
+            this.key_triggered_button("Down", ["z"], () => this.thrust[1] = 1, undefined, () => this.thrust[1] = 0);
+            
+            const speed_controls = this.control_panel.appendChild(document.createElement("span"));
+            speed_controls.style.margin = "30px";
+            this.key_triggered_button("-", ["o"], () =>
+                this.speed_multiplier /= 1.2, undefined, undefined, undefined, speed_controls);
+            this.live_string(box => {
+                box.textContent = "Speed: " + this.speed_multiplier.toFixed(2)
+            }, speed_controls);
+            this.key_triggered_button("+", ["p"], () =>
+                this.speed_multiplier *= 1.2, undefined, undefined, undefined, speed_controls);
+            this.new_line();
+            this.key_triggered_button("Roll left", [","], () => this.roll = 1, undefined, () => this.roll = 0);
+            this.key_triggered_button("Roll right", ["."], () => this.roll = -1, undefined, () => this.roll = 0);
+            this.new_line();
+            this.key_triggered_button("(Un)freeze mouse look around", ["f"], () => this.look_around_locked ^= 1, "#8B8885");
+            this.new_line();
+            this.key_triggered_button("Go to world origin", ["r"], () => {
+                this.matrix().set_identity(4, 4);
+                this.inverse().set_identity(4, 4)
+            }, "#8B8885");
+            this.new_line();
+            
+            this.key_triggered_button("Look at origin from front", ["1"], () => {
+                this.inverse().set(Mat4.look_at(vec3(0, 0, 10), vec3(0, 0, 0), vec3(0, 1, 0)));
+                this.matrix().set(Mat4.inverse(this.inverse()));
+            }, "#8B8885");
+            this.new_line();
+            this.key_triggered_button("from right", ["2"], () => {
+                this.inverse().set(Mat4.look_at(vec3(10, 0, 0), vec3(0, 0, 0), vec3(0, 1, 0)));
+                this.matrix().set(Mat4.inverse(this.inverse()));
+            }, "#8B8885");
+            this.key_triggered_button("from rear", ["3"], () => {
+                this.inverse().set(Mat4.look_at(vec3(0, 0, -10), vec3(0, 0, 0), vec3(0, 1, 0)));
+                this.matrix().set(Mat4.inverse(this.inverse()));
+            }, "#8B8885");
+            this.key_triggered_button("from left", ["4"], () => {
+                this.inverse().set(Mat4.look_at(vec3(-10, 0, 0), vec3(0, 0, 0), vec3(0, 1, 0)));
+                this.matrix().set(Mat4.inverse(this.inverse()));
+            }, "#8B8885");
+            this.new_line();
+            this.key_triggered_button("Attach to global camera", ["Shift", "R"],
+                () => {
+                    this.will_take_over_graphics_state = true
+                }, "#8B8885");
+            this.new_line();
         }
 
         first_person_flyaround(radians_per_frame, meters_per_frame, leeway = 70) {
@@ -1090,7 +1183,7 @@ const Mirror = defs.Mirror =
             this.position = position;
             this.size = size;
             this.shape = new Square();
-            this.material = new Material(new MirrorShader(3), {
+            this.material = new Material(new ReflectionShader(3), {
                 ambient: 1,
                 diffusivity: 2,
                 specularity: 0,

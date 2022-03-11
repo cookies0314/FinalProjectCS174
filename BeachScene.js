@@ -1,11 +1,14 @@
 import {defs, tiny} from './examples/common.js';
 // Pull these names into this module's scope for convenience:
 const {vec3, vec4, vec, color, Matrix, Mat4, Light, Shape, Material, Shader, Texture, Scene} = tiny;
-const {Cube, Axis_Arrows, Textured_Phong, Phong_Shader, Basic_Shader, Subdivision_Sphere} = defs
+const {Cube, Axis_Arrows, Textured_Phong, Phong_Shader, Basic_Shader, Subdivision_Sphere, ReflectionShader} = defs
 
 import {Shape_From_File} from './examples/obj-file-demo.js'
 import {Color_Phong_Shader, Shadow_Textured_Phong_Shader,
     Depth_Texture_Shader_2D, Buffered_Texture, LIGHT_DEPTH_TEX_SIZE} from './examples/shadow-demo-shaders.js'
+
+    //Doesn't work for some reason
+import Mirror from './examples/mirror.js'
 
 // 2D shape, to display the texture buffer
 const Square =
@@ -52,6 +55,8 @@ export class BeachScene extends Scene {
             cloud2: new Shape_From_File("assets/island-cloud-c.obj"),
             umbrella: new Shape_From_File("assets/umbrella_2.obj"),
             beachChair: new Shape_From_File("assets/BeachChair.obj"),
+            
+
         };
 
         const bump = new defs.Fake_Bump_Map(1);
@@ -72,7 +77,21 @@ export class BeachScene extends Scene {
             // texturedSand: new Material(new defs.Phong_Shader(), {diffusivity: 0.5, color: color(0.761, 0.698, 0.502, 1.0)}),
             texturedWater:  new Material(bump, {ambient: 1, specularity: 0.3, texture: new Texture("assets/textured_water.jpeg")}),
 
-            shadow_text_water: new Material(new Shadow_Textured_Phong_Shader(1),{
+            // shadow_text_water: new Material(new Shadow_Textured_Phong_Shader(1),{
+            //     color: color(0,.4,.9,1),
+            //     ambient: .3, specularity: 0.5,
+            //     color_texture: new Texture("assets/textured_water.jpeg"),
+            //     light_depth_texture: null
+            // }),
+
+            shadow_text_water: new Material(new ReflectionShader(1),{
+                color: color(0,.2,.9,1),
+                ambient: .3, specularity: 0.5,
+                color_texture: new Texture("assets/textured_water.jpeg"),
+                light_depth_texture: null
+            }),
+
+            mirror_water: new Material(new Mirror(vec3(0, 0, 0), 80),{
                 color: color(0,.4,.9,1),
                 ambient: .3, specularity: 0.5,
                 color_texture: new Texture("assets/textured_water.jpeg"),
@@ -188,6 +207,10 @@ export class BeachScene extends Scene {
         this.init_ok = false;
     }
 
+    update(program_state){
+        this.mirror.update(program_state);
+    }
+
     make_control_panel() {
         // // make_control_panel(): Sets up a panel of interactive HTML elements, including
         // // buttons with key bindings for affecting this scene, and live info readouts.
@@ -238,6 +261,67 @@ export class BeachScene extends Scene {
             this.waves = false
             this.night = false
         });
+    }
+
+    reflection_texture_buffer_init(gl){
+        this.reflectionTextureBuffer = gl.createTexture();
+        this.reflection_texture_buffer = new Buffered_Texture(this.reflectionTextureBuffer);
+
+        this.reflectionTextBuffSize = LIGHT_DEPTH_TEX_SIZE;
+        gl.bindTexture(gl.TEXTURE_2D, this.lightDepthTexture);
+        gl.texImage2D(
+            gl.TEXTURE_2D,      // target
+            0,                  // mip level
+            gl.DEPTH_COMPONENT, // internal format
+            this.reflectionTextBuffSize,   // width
+            this.reflectionTextBuffSize,   // height
+            0,                  // border
+            gl.DEPTH_COMPONENT, // format
+            gl.UNSIGNED_INT,    // type
+            null);              // data
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+        // Depth Texture Buffer
+        this.reflectionTextureBuffer = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.reflectionTextureBuffer);
+        gl.framebufferTexture2D(
+            gl.FRAMEBUFFER,       // target
+            gl.DEPTH_ATTACHMENT,  // attachment point
+            gl.TEXTURE_2D,        // texture target
+            this.lightDepthTexture,         // texture
+            0);                   // mip level
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+        // create a color texture of the same size as the depth texture
+        // see article why this is needed_
+        this.unusedTexture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, this.unusedTexture);
+        gl.texImage2D(
+            gl.TEXTURE_2D,
+            0,
+            gl.RGBA,
+            this.lightDepthTextureSize,
+            this.lightDepthTextureSize,
+            0,
+            gl.RGBA,
+            gl.UNSIGNED_BYTE,
+            null,
+        );
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        // attach it to the framebuffer
+        gl.framebufferTexture2D(
+            gl.FRAMEBUFFER,        // target
+            gl.COLOR_ATTACHMENT0,  // attachment point
+            gl.TEXTURE_2D,         // texture target
+            this.unusedTexture,         // texture
+            0);                    // mip level
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
 
     texture_buffer_init(gl) {
@@ -378,6 +462,48 @@ export class BeachScene extends Scene {
         }
     }
 
+    render_water(context, program_state, shadow_pass){
+
+        const t = program_state.animation_time/1000;
+        //Water and Waves
+        let wave_time = 0
+        if (this.waves) {
+            wave_time = t - this.prev_wave_t
+        } else {
+            this.prev_wave_t = t
+        }
+
+
+        //Before drawing the water, I think we need to move the camera to below the water
+        let water_transform = Mat4.identity();
+        water_transform = water_transform.times(Mat4.scale(20,.1,5));
+        water_transform = water_transform.times(Mat4.translation(1,-23.5,0));
+        water_transform = water_transform.times(Mat4.scale(1,20,10.1));
+
+        
+        if(this.waves)
+        {
+            water_transform = water_transform.times(Mat4.translation((-(0.8*Math.sin(wave_time+(Math.PI*1.5))+0.8))/20, 0, 0));
+        }
+
+        if(this.night)
+        {
+            this.shapes.cube.draw(context, program_state, water_transform, shadow_pass? this.materials.shadow_text_water.override({ambient: 0.17}) : this.pure);
+        }
+        else
+        {
+            if(this.rain)
+            {
+                this.shapes.cube.draw(context, program_state, water_transform, shadow_pass? this.materials.shadow_text_water.override({ambient: 0.23}) : this.pure);
+            }
+            else
+            {
+                this.shapes.cube.draw(context, program_state, water_transform, shadow_pass? this.materials.shadow_text_water : this.pure);
+            }
+        }
+
+    }
+
     render_scene(context, program_state, shadow_pass, draw_light_source=false, draw_shadow=false) {
         // shadow_pass: true if this is the second pass that draw the shadow.
         // draw_light_source: true if we want to draw the light source.
@@ -488,40 +614,9 @@ export class BeachScene extends Scene {
         }
 
 
-        //Water and Waves
-        let wave_time = 0
-        if (this.waves) {
-            wave_time = t - this.prev_wave_t
-        } else {
-            this.prev_wave_t = t
-        }
-
-
-        let water_transform = Mat4.identity();
-        water_transform = water_transform.times(Mat4.scale(20,.1,5));
-        water_transform = water_transform.times(Mat4.translation(1,-23.5,0));
-        water_transform = water_transform.times(Mat4.scale(1,20,10.1));
-
-        if(this.waves)
-        {
-            water_transform = water_transform.times(Mat4.translation((-(0.8*Math.sin(wave_time+(Math.PI*1.5))+0.8))/20, 0, 0));
-        }
-
-        if(this.night)
-        {
-            this.shapes.cube.draw(context, program_state, water_transform, shadow_pass? this.materials.shadow_text_water.override({ambient: 0.17}) : this.pure);
-        }
-        else
-        {
-            if(this.rain)
-            {
-                this.shapes.cube.draw(context, program_state, water_transform, shadow_pass? this.materials.shadow_text_water.override({ambient: 0.23}) : this.pure);
-            }
-            else
-            {
-                this.shapes.cube.draw(context, program_state, water_transform, shadow_pass? this.materials.shadow_text_water : this.pure);
-            }
-        }
+       
+        //Prevents the user from moving the camera by setting the position every time
+        // program_state.set_camera(Mat4.translation(1.33, -3.13, -20));
 
         /*
         for (let i = 0; i < 10; i++) {
@@ -748,6 +843,7 @@ export class BeachScene extends Scene {
                 return alert('need WEBGL_depth_texture');  // eslint-disable-line
             }
             this.texture_buffer_init(gl);
+            this.reflection_texture_buffer_init(gl);
 
             this.init_ok = true;
         }
@@ -803,6 +899,26 @@ export class BeachScene extends Scene {
         program_state.view_mat = program_state.camera_inverse;
         program_state.projection_transform = Mat4.perspective(Math.PI / 4, context.width / context.height, 0.5, 500);
         this.render_scene(context, program_state, true,true, true);
+
+
+
+        //Render the water
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.reflectionTextureBuffer);
+        gl.viewport(0, 0, this.reflectionTextBuffSize, this.reflectionTextBuffSize);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        // Prepare uniforms
+        program_state.light_view_mat = light_view_mat;
+        program_state.light_proj_mat = light_proj_mat;
+        program_state.light_tex_mat = light_proj_mat;
+        program_state.view_mat = light_view_mat;
+        program_state.projection_transform = light_proj_mat;
+        this.render_water(context, program_state, false);
+        //Unbind, draw to canvase
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        program_state.view_mat = program_state.camera_inverse;
+        program_state.projection_transform = Mat4.perspective(Math.PI / 4, context.width / context.height, 0.5, 500);
+        this.render_water(context, program_state, true);
 
     }
 
