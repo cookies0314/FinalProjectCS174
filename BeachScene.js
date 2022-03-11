@@ -166,6 +166,9 @@ export class BeachScene extends Scene {
             rain: new Material(new defs.Phong_Shader(),{ambient: 1, diffusivity: 0, specularity: 0, color: color(0.157, 0.573, 0.761, 1)}),
         }
 
+        this.audio = new Audio("assets/beachsounds.mp3");
+        this.music_on = false;
+
         this.initial_camera_location = Mat4.look_at(vec3(1, 0, 0), vec3(0, 0, 1), vec3(0, 1, 0));
         this.light_position = 0;
         this.sun_move = false;
@@ -242,6 +245,10 @@ export class BeachScene extends Scene {
             this.waves = !this.waves
         })
 
+        this.key_triggered_button("Toggle Sun/Moon Movement", ["b"], () => {
+            this.sun_move = !this.sun_move
+        })
+
         this.new_line()
         this.new_line()
 
@@ -256,11 +263,17 @@ export class BeachScene extends Scene {
         this.new_line()
         this.new_line()
 
+        this.key_triggered_button("Toggle Music", ["m"], () => {
+            this.music_on = !this.music_on
+        })
+
         this.key_triggered_button("Reset", ["r"], () => {
             this.wind = false
             this.rain = false
             this.waves = false
             this.night = false
+            this.music_on = false
+            this.sun_move = false
         });
     }
 
@@ -518,6 +531,16 @@ export class BeachScene extends Scene {
 
         program_state.draw_shadow = draw_shadow;
 
+        //Music
+        if(this.music_on)
+        {
+            this.audio.play();
+        }
+        else
+        {
+            this.audio.pause();
+        }
+
         //Drawing Sun/Moon/Light Source
         /*
         //  Create Sun
@@ -553,6 +576,9 @@ export class BeachScene extends Scene {
         }
         */
         //MAKE SUN MORE REALISTIC
+        let sun_transform = Mat4.identity();
+
+
         if(!this.night)
         {
             if (draw_light_source && shadow_pass) {
@@ -637,37 +663,49 @@ export class BeachScene extends Scene {
         //Chair
         let chair_transform = Mat4.identity();
         chair_transform = chair_transform.times(Mat4.translation(-8.5, 0.75, 3)).times(Mat4.scale(0.6,0.6,0.6));
+        let chair_transform1 = chair_transform.times(Mat4.translation(0, 0, 8));
         if (this.night){
             this.shapes.beachChair.draw(context, program_state, chair_transform, shadow_pass? this.materials.shadow_chair_mat.override({ambient: 0.2}) : this.pure)
+            this.shapes.beachChair.draw(context, program_state, chair_transform1, shadow_pass? this.materials.shadow_chair_mat.override({ambient: 0.2}) : this.pure)
         } else {
             if (this.rain) {
                 this.shapes.beachChair.draw(context, program_state, chair_transform, shadow_pass? this.materials.shadow_chair_mat.override({ambient: 0.35}) : this.pure)
+                this.shapes.beachChair.draw(context, program_state, chair_transform1, shadow_pass? this.materials.shadow_chair_mat.override({ambient: 0.35}) : this.pure)
             } else {
                 this.shapes.beachChair.draw(context, program_state, chair_transform, shadow_pass? this.materials.shadow_chair_mat : this.pure)
+                this.shapes.beachChair.draw(context, program_state, chair_transform1, shadow_pass? this.materials.shadow_chair_mat : this.pure)
             }
         }
         //BeachBall
         let beachBall_transform = Mat4.identity();
         beachBall_transform = beachBall_transform.times(Mat4.translation(-3, 0, 3)).times(Mat4.scale(0.5,0.5,0.5));
+        let beachBall_transform1 = beachBall_transform.times(Mat4.translation(0, 0, 9));
 
         if (this.wind) {
             if (-2*wind_time > -7.85) {
                 beachBall_transform = beachBall_transform.times(Mat4.translation(-2*wind_time, 0 , 0))
                 beachBall_transform = beachBall_transform.times(Mat4.rotation(2*wind_time, 0, 0, 1))
+                beachBall_transform1 = beachBall_transform1.times(Mat4.translation(-2*wind_time, 0 , 0))
+                beachBall_transform1 = beachBall_transform1.times(Mat4.rotation(2*wind_time, 0, 0, 1))
                 this.ball_roll = 2*wind_time
             } else {
                 beachBall_transform = beachBall_transform.times(Mat4.translation(-7.85, 0 , 0))
                 beachBall_transform = beachBall_transform.times(Mat4.rotation(this.ball_roll, 0, 0, 1))
+                beachBall_transform1 = beachBall_transform1.times(Mat4.translation(-7.85, 0 , 0))
+                beachBall_transform1 = beachBall_transform1.times(Mat4.rotation(this.ball_roll, 0, 0, 1))
             }
         }
 
         if (this.night) {
             this.shapes.beachBall.draw(context, program_state, beachBall_transform, shadow_pass? this.materials.shadow_text_Ball.override({ambient : 0.2}) : this.pure);
+            this.shapes.beachBall.draw(context, program_state, beachBall_transform1, shadow_pass? this.materials.shadow_text_Ball.override({ambient : 0.2}) : this.pure);
         } else {
             if (this.rain) {
                 this.shapes.beachBall.draw(context, program_state, beachBall_transform, shadow_pass? this.materials.shadow_text_Ball.override({ambient : 0.35}) : this.pure);
+                this.shapes.beachBall.draw(context, program_state, beachBall_transform1, shadow_pass? this.materials.shadow_text_Ball.override({ambient : 0.35}) : this.pure);
             } else {
                 this.shapes.beachBall.draw(context, program_state, beachBall_transform, shadow_pass? this.materials.shadow_text_Ball : this.pure);
+                this.shapes.beachBall.draw(context, program_state, beachBall_transform1, shadow_pass? this.materials.shadow_text_Ball : this.pure);
             }
         }
 
@@ -683,13 +721,18 @@ export class BeachScene extends Scene {
         }
 
         umbrella_transform = umbrella_transform.times(Mat4.translation(0, 0, 4))
+        let umbrella_transform1 = umbrella_transform.times(Mat4.translation(0, -5, 0))
+
         if (this.night) {
             this.shapes.umbrella.draw(context, program_state, umbrella_transform, shadow_pass? this.materials.shadow_umbrella_mat.override({ambient : 0.2}) : this.pure);
+            this.shapes.umbrella.draw(context, program_state, umbrella_transform1, shadow_pass? this.materials.shadow_umbrella_mat.override({ambient : 0.2}) : this.pure);
         } else {
             if (this.rain) {
                 this.shapes.umbrella.draw(context, program_state, umbrella_transform, shadow_pass? this.materials.shadow_umbrella_mat.override({ambient : 0.35}) : this.pure);
+                this.shapes.umbrella.draw(context, program_state, umbrella_transform1, shadow_pass? this.materials.shadow_umbrella_mat.override({ambient : 0.35}) : this.pure);
             } else {
                 this.shapes.umbrella.draw(context, program_state, umbrella_transform, shadow_pass? this.materials.shadow_umbrella_mat: this.pure);
+                this.shapes.umbrella.draw(context, program_state, umbrella_transform1, shadow_pass? this.materials.shadow_umbrella_mat: this.pure);
             }
         }
 
@@ -838,7 +881,7 @@ export class BeachScene extends Scene {
     }
 
     display(context, program_state) {
-        const t = program_state.animation_time;
+        const t = program_state.animation_time/1000;
         const gl = context.context;
 
         if (!this.init_ok) {
@@ -852,7 +895,6 @@ export class BeachScene extends Scene {
             this.init_ok = true;
         }
 
-        //TODO: THIS TOO
         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
@@ -868,13 +910,25 @@ export class BeachScene extends Scene {
             program_state.camera_matrix_location = Mat4.translation(1.33, -3.13, -20);
         }
 
-        //TODO: THIS PART HERE!!!!
-        // The position of the light --> declaring position of light
-        let light_transform = Mat4.identity();
+       //Lights
+        if(this.sun_move)
+        {
+            this.light_position = Mat4.rotation(-.75*t, 0,0,1).times(Mat4.translation(0,10,0).times(vec4(1, -.5, 0, 1)));
+        }
+        else
+        {
+            this.light_position = Mat4.translation(0,10,0).times(vec4(1, -.5, 0, 1));
+        }
 
-        this.light_position = Mat4.translation(0,10,0).times(vec4(1, -.5, 0, 1));
-        this.light_color = color(1,1,0,1);
 
+        if(!this.night)
+        {
+            this.light_color = color(1,1,0,1);
+        }
+        else
+        {
+            this.light_color = color(1,1,1,1);
+        }
         program_state.lights = [new Light(this.light_position,this.light_color, 1000)];
         this.light_view_target = vec4(0, 0, 0, 1);
         this.light_field_of_view = 130 * Math.PI / 180; // 130 degree
