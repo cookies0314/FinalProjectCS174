@@ -74,12 +74,12 @@ export class Shadow_Demo extends Scene {
 
             shadow_text_water: new Material(new Shadow_Textured_Phong_Shader(1),{
                 color: color(0,.4,.9,1),
-                ambient: .3, specularity: 0.3,
+                ambient: .3, specularity: 0.5,
                 color_texture: new Texture("assets/textured_water.jpeg"),
                 light_depth_texture: null
             }),
 
-            texturedSky:  new Material(bump, {ambient: 1, texture: new Texture("assets/textured_sky.jpg")}),
+            texturedSky:  new Material(bump, {ambient: 1, specularity: 0.2, texture: new Texture("assets/textured_sky.jpg")}),
             oldWater: new Material(new Textured_Phong(), {
                 color: color(0,0,0,1),
                 ambient: 1, diffusivity: 0.1, specularity: 0.1,
@@ -90,10 +90,18 @@ export class Shadow_Demo extends Scene {
             shadow_cloud_mat: new Material(new Shadow_Textured_Phong_Shader(1),
             {
                 color: color(1,1,1,1),
-                ambient: .5, specularity: 0,
+                ambient: 0.5, specularity: 0,
                 color_texture: new Texture("assets/cloud.jpg"),
                 light_depth_texture: null
             }),
+
+            shadow_rain_cloud_mat: new Material(new Shadow_Textured_Phong_Shader(1),
+                {
+                    color: color(1,1,1,1),
+                    ambient: 0.3, specularity: 0,
+                    color_texture: new Texture("assets/rainclouds.jpg"),
+                    light_depth_texture: null
+                }),
 
             texturedBeachBall:  new Material(bump, {ambient: 1, texture: new Texture("assets/beachball.jpg")}),
 
@@ -120,10 +128,13 @@ export class Shadow_Demo extends Scene {
                 color_texture: new Texture("assets/chairtexture.jpg"),
                 light_depth_texture: null
             }),
+
+
+
             nighttexturedSand: new Material(bump, {ambient: 0.5, specularity: 0, texture: new Texture("assets/textured_sand.jpg")}),
             // texturedSand: new Material(new defs.Phong_Shader(), {diffusivity: 0.5, color: color(0.761, 0.698, 0.502, 1.0)}),
             nighttexturedWater:  new Material(bump, {ambient: 0.7, specularity: 0.2, texture: new Texture("assets/textured_water.jpeg")}),
-            nighttexturedSky:  new Material(bump, {ambient: 0.5, specularity: 1, texture: new Texture("assets/starrynight.jpg")}),
+            nighttexturedSky:  new Material(bump, {ambient: 0.5, specularity: 0.1, texture: new Texture("assets/night.jpg")}),
             nightcloudMat: new Material(bump, {ambient: 0.6, specularity: 0, texture: new Texture("assets/cloud.jpg")}),
             nighttexturedBeachBall:  new Material(bump, {ambient: 0.6, specularity: 0.5, texture: new Texture("assets/beachball.jpg")}),
             nightumbrellaMat: new Material(bump, {ambient: 0.6, specularity: 0, texture: new Texture("assets/umbrella.jpg")}),
@@ -131,8 +142,8 @@ export class Shadow_Demo extends Scene {
             moonMat: new Material(bump, {ambient: 0.9, specularity: 0, texture: new Texture("assets/moon_2.jpg")}),
             raincloudMat: new Material(bump, {ambient: 0.8, specularity: 0, texture: new Texture("assets/rainclouds.jpg")}),
             nightraincloudMat: new Material(bump, {ambient: 0.6, specularity: 0, texture: new Texture("assets/rainclouds.jpg")}),
-            raintexturedSky:  new Material(bump, {ambient: 0.6, texture: new Texture("assets/textured_sky.jpg")}),
-            rain: new Material(new defs.Phong_Shader(),{ambient: 1, diffusivity: 0, specularity: 0, color: color(4, 146, 194,1)}),
+            raintexturedSky:  new Material(bump, {ambient: 0.6, specularity: 0.1, texture: new Texture("assets/textured_sky.jpg")}),
+            rain: new Material(new defs.Phong_Shader(),{ambient: 1, diffusivity: 0, specularity: 0, color: color(0.157, 0.573, 0.761, 1)}),
         }
 
         this.initial_camera_location = Mat4.look_at(vec3(1, 0, 0), vec3(0, 0, 1), vec3(0, 1, 0));
@@ -195,35 +206,20 @@ export class Shadow_Demo extends Scene {
         // this.key_triggered_button("Swarm mode", ["m"], function () {
         //     this.swarm ^= 1;
         // });
-        this.key_triggered_button("Up", ["u"], () => {
+        this.control_panel.innerHTML += "Change the weather and time of the scene.<br>";
 
-        });
-        this.key_triggered_button("Down", ["j"], () => {
+        this.new_line()
 
-        });
-        this.key_triggered_button("Left", ["h"], () => {
-
-        });
-        this.key_triggered_button("Right", ["k"], () => {
-
-        });
-        this.new_line();
-        this.new_line();
-        this.key_triggered_button("Sun Move", ["q"], () => {
-            this.sun_move = !this.sun_move
-        })
         this.key_triggered_button("Toggle Wind", ["w"], () => {
             this.wind = !this.wind
         })
-        this.key_triggered_button("Reset", ["r"], () => {
-            this.wind = false
-            this.rain = false
-            this.waves = false
-            this.night = false
-        });
+
         this.key_triggered_button("Toggle Waves", ["a"], () => {
             this.waves = !this.waves
         })
+
+        this.new_line()
+        this.new_line()
 
         this.key_triggered_button("Toggle Night/Day", ["n"], () => {
             this.night = !this.night
@@ -232,6 +228,16 @@ export class Shadow_Demo extends Scene {
         this.key_triggered_button("Toggle Rain", ["i"], () => {
             this.rain = !this.rain
         })
+
+        this.new_line()
+        this.new_line()
+
+        this.key_triggered_button("Reset", ["r"], () => {
+            this.wind = false
+            this.rain = false
+            this.waves = false
+            this.night = false
+        });
     }
 
     texture_buffer_init(gl) {
@@ -454,7 +460,7 @@ export class Shadow_Demo extends Scene {
             this.shapes.cube.draw(context, program_state, sky_transform, this.materials.nighttexturedSky);
         } else {
             if (this.rain) {
-                this.shapes.cube.draw(context, program_state, sky_transform, this.materials.raintexturedSky);
+                this.shapes.cube.draw(context, program_state, sky_transform, this.materials.texturedSky.override({ambient: 0.6, specularity: 0.1}));
             } else {
                 this.shapes.cube.draw(context, program_state, sky_transform, this.materials.texturedSky);
             }
@@ -467,13 +473,13 @@ export class Shadow_Demo extends Scene {
 
         if(this.night)
         {
-            this.shapes.cube.draw(context, program_state, sand_transform, this.materials.nighttexturedSand);
+            this.shapes.cube.draw(context, program_state, sand_transform, shadow_pass? this.materials.shadow_textured_sand.override({ambient: 0.05, specularity: 0.02}) : this.pure);
         }
         else
         {
             if(this.rain)
             {
-                this.shapes.cube.draw(context, program_state, sand_transform, this.materials.texturedSand.override(({ambient:.9})));
+                this.shapes.cube.draw(context, program_state, sand_transform, shadow_pass? this.materials.shadow_textured_sand.override({ambient: 0.1, specularity: 0.05}) : this.pure);
             }
             else
             {
@@ -498,18 +504,18 @@ export class Shadow_Demo extends Scene {
 
         if(this.waves)
         {
-            water_transform = water_transform.times(Mat4.translation((0.4*Math.sin(wave_time+(Math.PI*1.5))), 0, 0));
+            water_transform = water_transform.times(Mat4.translation((-(0.8*Math.sin(wave_time+(Math.PI*1.5))+0.8))/20, 0, 0));
         }
 
         if(this.night)
         {
-            this.shapes.cube.draw(context, program_state, water_transform, this.materials.nighttexturedWater);
+            this.shapes.cube.draw(context, program_state, water_transform, shadow_pass? this.materials.shadow_text_water.override({ambient: 0.17}) : this.pure);
         }
         else
         {
             if(this.rain)
             {
-                this.shapes.cube.draw(context, program_state, water_transform, this.materials.texturedWater.override({ambient:0.9}));
+                this.shapes.cube.draw(context, program_state, water_transform, shadow_pass? this.materials.shadow_text_water.override({ambient: 0.23}) : this.pure);
             }
             else
             {
@@ -533,17 +539,17 @@ export class Shadow_Demo extends Scene {
         let chair_transform = Mat4.identity();
         chair_transform = chair_transform.times(Mat4.translation(-8.5, 0.75, 3)).times(Mat4.scale(0.6,0.6,0.6));
         if (this.night){
-            this.shapes.beachChair.draw(context, program_state, chair_transform, this.materials.nightchairMat)
+            this.shapes.beachChair.draw(context, program_state, chair_transform, shadow_pass? this.materials.shadow_chair_mat.override({ambient: 0.2}) : this.pure)
         } else {
             if (this.rain) {
-                this.shapes.beachChair.draw(context, program_state, chair_transform, this.materials.chairMat.override({ambient: 0.9}))
+                this.shapes.beachChair.draw(context, program_state, chair_transform, shadow_pass? this.materials.shadow_chair_mat.override({ambient: 0.35}) : this.pure)
             } else {
-                this.shapes.beachChair.draw(context, program_state, chair_transform, shadow_pass? this.materials.shadow_chair_mat: this.pure)
+                this.shapes.beachChair.draw(context, program_state, chair_transform, shadow_pass? this.materials.shadow_chair_mat : this.pure)
             }
         }
         //BeachBall
         let beachBall_transform = Mat4.identity();
-        beachBall_transform = beachBall_transform.times(Mat4.translation(-3, 0, 5)).times(Mat4.scale(0.5,0.5,0.5));
+        beachBall_transform = beachBall_transform.times(Mat4.translation(-3, 0, 3)).times(Mat4.scale(0.5,0.5,0.5));
 
         if (this.wind) {
             if (-2*wind_time > -7.85) {
@@ -557,10 +563,10 @@ export class Shadow_Demo extends Scene {
         }
 
         if (this.night) {
-            this.shapes.beachBall.draw(context, program_state, beachBall_transform, this.materials.nighttexturedBeachBall);
+            this.shapes.beachBall.draw(context, program_state, beachBall_transform, shadow_pass? this.materials.shadow_text_Ball.override({ambient : 0.2}) : this.pure);
         } else {
             if (this.rain) {
-                this.shapes.beachBall.draw(context, program_state, beachBall_transform, this.materials.texturedBeachBall.override({ambient: 0.9}));
+                this.shapes.beachBall.draw(context, program_state, beachBall_transform, shadow_pass? this.materials.shadow_text_Ball.override({ambient : 0.35}) : this.pure);
             } else {
                 this.shapes.beachBall.draw(context, program_state, beachBall_transform, shadow_pass? this.materials.shadow_text_Ball : this.pure);
             }
@@ -579,10 +585,10 @@ export class Shadow_Demo extends Scene {
 
         umbrella_transform = umbrella_transform.times(Mat4.translation(0, 0, 4))
         if (this.night) {
-            this.shapes.umbrella.draw(context, program_state, umbrella_transform, this.materials.nightumbrellaMat);
+            this.shapes.umbrella.draw(context, program_state, umbrella_transform, shadow_pass? this.materials.shadow_umbrella_mat.override({ambient : 0.2}) : this.pure);
         } else {
             if (this.rain) {
-                this.shapes.umbrella.draw(context, program_state, umbrella_transform, this.materials.umbrellaMat.override({ambient: 0.9}));
+                this.shapes.umbrella.draw(context, program_state, umbrella_transform, shadow_pass? this.materials.shadow_umbrella_mat.override({ambient : 0.35}) : this.pure);
             } else {
                 this.shapes.umbrella.draw(context, program_state, umbrella_transform, shadow_pass? this.materials.shadow_umbrella_mat: this.pure);
             }
@@ -641,48 +647,48 @@ export class Shadow_Demo extends Scene {
         cloud_transform11 = cloud_transform11.times(Mat4.translation(this.cloud12_pos, 5.5, 0)).times(Mat4.scale(1.2, 1.2, 1.2))
         if (this.rain) {
             if (this.night) {
-                this.shapes.cloud.draw(context, program_state, cloud_transform, this.materials.nightraincloudMat);
-                this.shapes.cloud1.draw(context, program_state, cloud_transform1, this.materials.nightraincloudMat);
-                this.shapes.cloud2.draw(context, program_state, cloud_transform2, this.materials.nightraincloudMat);
-                this.shapes.cloud.draw(context, program_state, cloud_transform3, this.materials.nightraincloudMat);
-                this.shapes.cloud1.draw(context, program_state, cloud_transform4, this.materials.nightraincloudMat);
-                this.shapes.cloud2.draw(context, program_state, cloud_transform5, this.materials.nightraincloudMat);
-                this.shapes.cloud1.draw(context, program_state, cloud_transform6, this.materials.nightraincloudMat);
-                this.shapes.cloud2.draw(context, program_state, cloud_transform7, this.materials.nightraincloudMat);
-                this.shapes.cloud1.draw(context, program_state, cloud_transform8, this.materials.nightraincloudMat);
-                this.shapes.cloud2.draw(context, program_state, cloud_transform9, this.materials.nightraincloudMat);
-                this.shapes.cloud1.draw(context, program_state, cloud_transform10, this.materials.nightraincloudMat);
-                this.shapes.cloud2.draw(context, program_state, cloud_transform11, this.materials.nightraincloudMat);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform, shadow_pass? this.materials.shadow_rain_cloud_mat.override({ambient : 0.2}) : this.pure);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform1, shadow_pass? this.materials.shadow_rain_cloud_mat.override({ambient : 0.2}) : this.pure);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform2, shadow_pass? this.materials.shadow_rain_cloud_mat.override({ambient : 0.2}) : this.pure);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform3, shadow_pass? this.materials.shadow_rain_cloud_mat.override({ambient : 0.2}) : this.pure);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform4, shadow_pass? this.materials.shadow_rain_cloud_mat.override({ambient : 0.2}) : this.pure);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform5, shadow_pass? this.materials.shadow_rain_cloud_mat.override({ambient : 0.2}) : this.pure);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform6, shadow_pass? this.materials.shadow_rain_cloud_mat.override({ambient : 0.2}) : this.pure);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform7, shadow_pass? this.materials.shadow_rain_cloud_mat.override({ambient : 0.2}) : this.pure);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform8, shadow_pass? this.materials.shadow_rain_cloud_mat.override({ambient : 0.2}) : this.pure);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform9, shadow_pass? this.materials.shadow_rain_cloud_mat.override({ambient : 0.2}) : this.pure);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform10, shadow_pass? this.materials.shadow_rain_cloud_mat.override({ambient : 0.2}) : this.pure);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform11, shadow_pass? this.materials.shadow_rain_cloud_mat.override({ambient : 0.2}) : this.pure);
             } else {
-                this.shapes.cloud.draw(context, program_state, cloud_transform, this.materials.raincloudMat);
-                this.shapes.cloud1.draw(context, program_state, cloud_transform1, this.materials.raincloudMat);
-                this.shapes.cloud2.draw(context, program_state, cloud_transform2, this.materials.raincloudMat);
-                this.shapes.cloud.draw(context, program_state, cloud_transform3, this.materials.raincloudMat);
-                this.shapes.cloud1.draw(context, program_state, cloud_transform4, this.materials.raincloudMat);
-                this.shapes.cloud2.draw(context, program_state, cloud_transform5, this.materials.raincloudMat);
-                this.shapes.cloud1.draw(context, program_state, cloud_transform6, this.materials.raincloudMat);
-                this.shapes.cloud2.draw(context, program_state, cloud_transform7, this.materials.raincloudMat);
-                this.shapes.cloud1.draw(context, program_state, cloud_transform8, this.materials.raincloudMat);
-                this.shapes.cloud2.draw(context, program_state, cloud_transform9, this.materials.raincloudMat);
-                this.shapes.cloud1.draw(context, program_state, cloud_transform10, this.materials.raincloudMat);
-                this.shapes.cloud2.draw(context, program_state, cloud_transform11, this.materials.raincloudMat);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform, shadow_pass? this.materials.shadow_rain_cloud_mat : this.pure);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform1, shadow_pass? this.materials.shadow_rain_cloud_mat : this.pure);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform2, shadow_pass? this.materials.shadow_rain_cloud_mat : this.pure);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform3, shadow_pass? this.materials.shadow_rain_cloud_mat : this.pure);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform4, shadow_pass? this.materials.shadow_rain_cloud_mat : this.pure);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform5, shadow_pass? this.materials.shadow_rain_cloud_mat : this.pure);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform6, shadow_pass? this.materials.shadow_rain_cloud_mat : this.pure);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform7, shadow_pass? this.materials.shadow_rain_cloud_mat : this.pure);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform8, shadow_pass? this.materials.shadow_rain_cloud_mat : this.pure);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform9, shadow_pass? this.materials.shadow_rain_cloud_mat : this.pure);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform10, shadow_pass? this.materials.shadow_rain_cloud_mat : this.pure);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform11, shadow_pass? this.materials.shadow_rain_cloud_mat : this.pure);
             }
         }
         else {
             if (this.night) {
-                this.shapes.cloud.draw(context, program_state, cloud_transform, this.materials.nightcloudMat);
-                this.shapes.cloud1.draw(context, program_state, cloud_transform1, this.materials.nightcloudMat);
-                this.shapes.cloud2.draw(context, program_state, cloud_transform2, this.materials.nightcloudMat);
-                this.shapes.cloud.draw(context, program_state, cloud_transform3, this.materials.nightcloudMat);
-                this.shapes.cloud1.draw(context, program_state, cloud_transform4, this.materials.nightcloudMat);
-                this.shapes.cloud2.draw(context, program_state, cloud_transform5, this.materials.nightcloudMat);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform, shadow_pass? this.materials.shadow_cloud_mat.override({ambient : 0.2}) : this.pure);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform1, shadow_pass? this.materials.shadow_cloud_mat.override({ambient : 0.2}) : this.pure);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform2, shadow_pass? this.materials.shadow_cloud_mat.override({ambient : 0.2}) : this.pure);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform3, shadow_pass? this.materials.shadow_cloud_mat.override({ambient : 0.2}) : this.pure);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform4, shadow_pass? this.materials.shadow_cloud_mat.override({ambient : 0.2}) : this.pure);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform5, shadow_pass? this.materials.shadow_cloud_mat.override({ambient : 0.2}) : this.pure);
             } else {
-                this.shapes.cloud.draw(context, program_state, cloud_transform, shadow_pass? this.materials.shadow_cloud_mat : this.pure);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform, shadow_pass? this.materials.shadow_cloud_mat : this.pure);
                 this.shapes.cloud1.draw(context, program_state, cloud_transform1,shadow_pass? this.materials.shadow_cloud_mat : this.pure);
                 this.shapes.cloud2.draw(context, program_state, cloud_transform2, shadow_pass? this.materials.shadow_cloud_mat : this.pure);
-                this.shapes.cloud.draw(context, program_state, cloud_transform3, shadow_pass? this.materials.shadow_cloud_mat : this.pure);
-                this.shapes.cloud1.draw(context, program_state, cloud_transform4, shadow_pass? this.materials.shadow_cloud_mat : this.pure);
-                this.shapes.cloud2.draw(context, program_state, cloud_transform5, shadow_pass? this.materials.shadow_cloud_mat : this.pure);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform3, shadow_pass? this.materials.shadow_cloud_mat : this.pure);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform4, shadow_pass? this.materials.shadow_cloud_mat : this.pure);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform5, shadow_pass? this.materials.shadow_cloud_mat : this.pure);
             }
         }
 
