@@ -840,18 +840,16 @@ const ReflectionShader = defs.ReflectionShader =
             return this.shared_glsl_code() +
                 `
                 varying vec4 clip_space;
-                attribute vec3 position, normal;  // Position is expressed in object coordinates.
+                attribute vec3 position, normal;
                 uniform mat4 model_transform;
                 uniform mat4 projection_camera_model_transform;
                 const float tiling = 6.0;
                 void main()
                 {               
-                clip_space = projection_camera_model_transform * vec4( position, 1.0 );
-                // The vertex's final resting place (in NDCS):
-                gl_Position = clip_space;
-                N = normalize( mat3( model_transform ) * normal / squared_scale);
-                vertex_worldspace = ( model_transform * vec4( position, 1.0 ) ).xyz;
-                // The final normal vector in screen space.
+                    clip_space = projection_camera_model_transform * vec4( position, 1.0 );
+                    gl_Position = clip_space;
+                    N = normalize( mat3( model_transform ) * normal / squared_scale);
+                    vertex_worldspace = ( model_transform * vec4( position, 1.0 ) ).xyz;
                 } `
             ;
         }
@@ -875,6 +873,7 @@ const ReflectionShader = defs.ReflectionShader =
                 vec4 reflect_color = texture2D(reflection_texture, reflect_coords);
                 vec4 refract_color = texture2D(refraction_texture, refract_coords);
                 gl_FragColor = mix(reflect_color, refract_color, 0.5);
+                gl_FragColor = reflect_color;
                 gl_FragColor.xyz += phong_model_lights( vec3(0, 1, 0), vertex_worldspace );
             }
             `;

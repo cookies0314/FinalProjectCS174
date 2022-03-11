@@ -88,7 +88,8 @@ export class BeachScene extends Scene {
                 color: color(0,.2,.9,1),
                 ambient: .3, specularity: 0.5,
                 color_texture: new Texture("assets/textured_water.jpeg"),
-                light_depth_texture: null
+                light_depth_texture: null,
+                reflection_texture_buffer: null
             }),
 
             mirror_water: new Material(new Mirror(vec3(0, 0, 0), 80),{
@@ -264,11 +265,12 @@ export class BeachScene extends Scene {
     }
 
     reflection_texture_buffer_init(gl){
-        this.reflectionTextureBuffer = gl.createTexture();
-        this.reflection_texture_buffer = new Buffered_Texture(this.reflectionTextureBuffer);
+        this.reflectionTexture = gl.createTexture();
+        this.reflection_texture_buffer = new Buffered_Texture(this.reflectionTexture);
+        this.materials.shadow_text_water.reflection_texture_buffer = this.reflection_texture_buffer;
 
-        this.reflectionTextBuffSize = LIGHT_DEPTH_TEX_SIZE;
-        gl.bindTexture(gl.TEXTURE_2D, this.lightDepthTexture);
+        this.reflectionTextBuffSize = 1024;
+        gl.bindTexture(gl.TEXTURE_2D, this.reflectionTexture);
         gl.texImage2D(
             gl.TEXTURE_2D,      // target
             0,                  // mip level
@@ -291,7 +293,7 @@ export class BeachScene extends Scene {
             gl.FRAMEBUFFER,       // target
             gl.DEPTH_ATTACHMENT,  // attachment point
             gl.TEXTURE_2D,        // texture target
-            this.lightDepthTexture,         // texture
+            this.reflectionTexture,         // texture
             0);                   // mip level
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
@@ -303,8 +305,8 @@ export class BeachScene extends Scene {
             gl.TEXTURE_2D,
             0,
             gl.RGBA,
-            this.lightDepthTextureSize,
-            this.lightDepthTextureSize,
+            this.reflectionTextBuffSize,
+            this.reflectionTextBuffSize,
             0,
             gl.RGBA,
             gl.UNSIGNED_BYTE,
@@ -480,6 +482,7 @@ export class BeachScene extends Scene {
         water_transform = water_transform.times(Mat4.translation(1,-23.5,0));
         water_transform = water_transform.times(Mat4.scale(1,20,10.1));
 
+        program_state.water_transform = water_transform;
         
         if(this.waves)
         {
@@ -594,7 +597,8 @@ export class BeachScene extends Scene {
 
         //Sand floor transform
         let sand_transform = Mat4.scale(20, .1, 5);
-        sand_transform = sand_transform.times(Mat4.translation(0,-25,0));
+        sand_transform = sand_transform.times(Mat4.translation(-1, -25, 0));
+        // sand_transform = sand_transform.times(Mat4.translation(0,-25,0));
         sand_transform = sand_transform.times(Mat4.scale(1,20,10));
 
         if(this.night)
@@ -860,6 +864,8 @@ export class BeachScene extends Scene {
             )); // Locate the camera here
              */
             program_state.set_camera(Mat4.translation(1.33, -3.13, -20));
+            program_state.camera_location = vec3(1.33, -3.13, -20);
+            program_state.camera_matrix_location = Mat4.translation(1.33, -3.13, -20);
         }
 
         //TODO: THIS PART HERE!!!!
@@ -901,16 +907,38 @@ export class BeachScene extends Scene {
         this.render_scene(context, program_state, true,true, true);
 
 
+        let distance = (-3.13 - 23.5);
+        // program_state.set_camera(Mat4.translation(1.33, -3.13, -20))
+        // .times(Mat4.rotation(-90, 0, 0, 1)));
+        // .times(Mat4.scale(0, -1, 0)));
 
+
+        this.reflection_position = Mat4.translation(0,-20,0).times(vec4(1, -.5, 0, 1));
+
+        this.reflection_position = Mat4.translation(1.33, -distance, -20).times(vec4(1,1,1,1));
+        
+        this.reflection_view_target = vec4(0, 0, 0, 1);
+
+        this.reflection_field_of_view = 90 * Math.PI / 180; // 130 degree
+
+        // Step 1: set the perspective and camera to the POV of the water
+        const reflection_view_mat = Mat4.look_at(
+            vec3(this.reflection_position[0], this.reflection_position[1], this.reflection_position[2]),
+            vec3(this.reflection_view_target[0], this.reflection_view_target[1], this.reflection_view_target[2]),
+            vec3(0, 1, 0), 
+        );
+
+        // const reflection_view_mat = (Mat4.translation(1.33, -distance, -20).times(Mat4.scale(1, -1, 1)));
+        const reflection_proj_mat = Mat4.perspective(this.reflection_field_of_view, 1, 0.5, 500);
         //Render the water
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.reflectionTextureBuffer);
         gl.viewport(0, 0, this.reflectionTextBuffSize, this.reflectionTextBuffSize);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         // Prepare uniforms
-        program_state.light_view_mat = light_view_mat;
-        program_state.light_proj_mat = light_proj_mat;
+        program_state.reflection_view_mat = reflection_view_mat;
+        program_state.reflection_proj_mat = reflection_proj_mat;
         program_state.light_tex_mat = light_proj_mat;
-        program_state.view_mat = light_view_mat;
+        program_state.view_mat = reflection_view_mat;
         program_state.projection_transform = light_proj_mat;
         this.render_water(context, program_state, false);
         //Unbind, draw to canvase
@@ -918,8 +946,12 @@ export class BeachScene extends Scene {
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         program_state.view_mat = program_state.camera_inverse;
         program_state.projection_transform = Mat4.perspective(Math.PI / 4, context.width / context.height, 0.5, 500);
-        this.render_water(context, program_state, true);
 
+
+
+        this.render_water(context, program_state, true);
+        // program_state.set_camera(Mat4.translation(1.33, -3.13, -20));
+        // program_state.set_camera(Mat4.translation(-3.15, 7, -85.37));
     }
 
 }
