@@ -23,16 +23,19 @@ export class BeachScene extends Scene {
         const column_operation = (t, p) => Mat4.translation(.2, 0, 0).times(p.to4(1)).to3();
 
         this.shapes = {
-             sun: new defs.Subdivision_Sphere(4),
+            sun: new defs.Subdivision_Sphere(4),
             beachBall: new defs.Subdivision_Sphere(5),
             cubeSand: new Cube(),
             cube: new Cube(),
             sky: new defs.Grid_Patch(200, 225, row_operation, column_operation, [[0, 10], [0, 1]]),
+
             cloud: new Shape_From_File("assets/uploads_files_721601_cloud.obj"),
             cloud1: new Shape_From_File("assets/island-cloud-mod.obj"),
             cloud2: new Shape_From_File("assets/island-cloud-c.obj"),
             umbrella: new Shape_From_File("assets/umbrella_2.obj"),
             beachChair: new Shape_From_File("assets/BeachChair.obj"),
+            moon: new defs.Subdivision_Sphere(3),
+
         };
 
         // *** Materials
@@ -48,6 +51,7 @@ export class BeachScene extends Scene {
             texturedSand: new Material(bump, {ambient: 1, specularity: 0, texture: new Texture("assets/textured_sand.jpg")}),
             // texturedSand: new Material(new defs.Phong_Shader(), {diffusivity: 0.5, color: color(0.761, 0.698, 0.502, 1.0)}),
             texturedWater:  new Material(bump, {ambient: 1, specularity: 0.3, texture: new Texture("assets/textured_water.jpeg")}),
+
             texturedSky:  new Material(bump, {ambient: 1, texture: new Texture("assets/textured_sky.jpg")}),
             oldWater: new Material(new Textured_Phong(), {
                 color: hex_color("#000000"),
@@ -56,6 +60,7 @@ export class BeachScene extends Scene {
             }),
             cloudMat: new Material(bump, {ambient: 1, specularity: 0, texture: new Texture("assets/cloud.jpg")}),
             texturedBeachBall:  new Material(bump, {ambient: 1, texture: new Texture("assets/beachball.jpg")}),
+
 
             shadow_text_Ball: new Material(new Shadow_Textured_Phong_Shader(1),{
                 color: color(.5,.5,.5,1),
@@ -126,6 +131,27 @@ export class BeachScene extends Scene {
             color: color(0, 0, .0, 1),
             ambient: 1, diffusivity: 0, specularity: 0, texture: null
         });
+
+            moon: new Material (new defs.Phong_Shader(),
+                {color: hex_color("#C0C0C0"), ambient: 1, diffusivity: 0}),
+                
+        }
+        this.initial_camera_location = Mat4.look_at(vec3(0, 10, 20), vec3(0, 0, 0), vec3(0, 1, 0));
+    
+
+        this.sun_move = true;
+        
+        this.moon_angle = 0.0;
+        this.moon_saved = 0.0;
+        // this.chair_position; 
+        // this.umbrella_positions; 
+        //console.log(this.chair_position)
+        this.sun_angle  = 0.0;
+        this.sun_scale  = 0.0;
+
+        this.saved_sun_angle  = 0.0;
+        this.saved_sun_scale  = 0.0;
+
     }
 
 
@@ -146,6 +172,15 @@ export class BeachScene extends Scene {
         this.new_line();
         this.key_triggered_button("Sun Move", ["q"], () => {
             this.sun_move = !this.sun_move
+
+        
+        // this.key_triggered_button("Sun Move", ["b"], () => {
+        //     this.sun_move = !this.sun_move;
+        //     this.saved_sun_angle = this.sun_angle;
+        //     this.saved_sun_scale = this.sun_scale;
+        //     this.moon_saved = this.moon_angle;}
+            
+
         })
         this.key_triggered_button("Toggle Wind", ["w"], () => {
             this.wind = !this.wind
@@ -301,6 +336,7 @@ export class BeachScene extends Scene {
                 position += 33.5
             }
 
+
             return position
         }
         else {
@@ -356,14 +392,27 @@ export class BeachScene extends Scene {
         let sun_angle = -2*t;
         // let sun_scale = 2*Math.cos(t);
         let sun_scale = 1.5
+
         //need to find better rotation
 
-        if(!this.sun_move)
+        // May need to debug, but this is for the sun to stay in position if "sun" button is pushed
+        if(this.sun_move)
         {
             sun_angle = 0;
             sun_scale = 1.5;
-            //implement pause at current position
+             //implement pause at current position
+            // sun_transform = sun_transform.times(Mat4.rotation(this.sun_angle,0,0,1))
+            //     .times(Mat4.translation(0,8,0))
+            //     .times(Mat4.scale(2,2,2));
+
+           
         }
+        else{
+            sun_transform = sun_transform.times(Mat4.rotation(this.saved_sun_angle,0,0,1))
+                .times(Mat4.translation(0,8,0))
+                .times(Mat4.scale(2,2,2));          
+        }
+
 
         sun_transform = sun_transform.times(Mat4.rotation(sun_angle,0,0,1));
         sun_transform = sun_transform.times(Mat4.translation(0,8,0));
@@ -376,6 +425,7 @@ export class BeachScene extends Scene {
 
 
 
+
         // program_state.lights = [new Light(vec4(0, 0, 0, 1), color(1.0, Math.abs((Math.sin(Math.PI*(t/20)))), Math.abs((Math.sin(Math.PI*(t/20)))), 1.0), 10)];
         // const light_position = Mat4.rotation(angle, 1, 0, 0).times(vec4(0, 0, 1, 0));
         // program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000000)];
@@ -384,6 +434,23 @@ export class BeachScene extends Scene {
         } else {
             this.shapes.sun.draw(context, program_state, sun_transform, this.materials.sun);
         }
+
+        // this.shapes.sun.draw(context, program_state, sun_transform, this.materials.sun);
+
+        // //moon
+        // let moon_transform = Mat4.identity();
+        // this.moon_angle    = 0.95*t;
+        // if(this.sun_move){
+        //     moon_transform = moon_transform.times(Mat4.rotation(this.moon_angle, 0,0,1));
+        //     moon_transform = moon_transform.times(Mat4.translation(6,-8,0));   
+        // }
+        // else{
+        //     moon_transform = moon_transform.times(Mat4.rotation(this.moon_saved, 0,0,1));
+        //     moon_transform = moon_transform.times(Mat4.translation(6,-8,0));
+        // }
+
+        // this.shapes.moon.draw(context, program_state, moon_transform, this.materials.moon);
+
 
         //Sand, water, sky transforms
         //Sand and water transform stretches sand & water to take up the whole beach
@@ -409,6 +476,7 @@ export class BeachScene extends Scene {
                 this.shapes.sky.draw(context, program_state, sky_transform, this.materials.texturedSky);
             }
         }
+        
         // this.shapes.sky.draw(context, program_state, sky_transform, this.floor);
 
         //Make rudimentary waves
@@ -452,6 +520,7 @@ export class BeachScene extends Scene {
             this.prev_wave_t = t
         }
 
+
         if (this.waves) {
             water_transform = water_transform.times(Mat4.translation(-2*(0.4*Math.sin(wave_time+(Math.PI*1.5))+1.4), -1.95, 5))
                 .times(Mat4.scale(1,-1.5,10));
@@ -459,6 +528,7 @@ export class BeachScene extends Scene {
             water_transform = water_transform.times(Mat4.translation(-2, -1.95, 5))
                 .times(Mat4.scale(1,-1.5,10));
         }
+
 
         for (let i = 0; i < 10; i++) {
             // this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
@@ -480,6 +550,7 @@ export class BeachScene extends Scene {
             } else {
                 this.shapes.beachChair.draw(context, program_state, chair_transform, this.materials.chairMat)
             }
+
         }
         //Create the beach ball
         let beachBall_transform = Mat4.identity();
@@ -503,7 +574,7 @@ export class BeachScene extends Scene {
                 this.shapes.beachBall.draw(context, program_state, beachBall_transform, this.materials.texturedBeachBall.override({ambient: 0.9}));
             } else {
                 this.shapes.beachBall.draw(context, program_state, beachBall_transform, shadow_pass? this.materials.shadow_text_Ball: this.pure);
-            }
+
         }
 
         let umbrella_movement = 0.5*(Math.sin(wind_time)) + 1
@@ -534,7 +605,7 @@ export class BeachScene extends Scene {
         */
 
 
-        //Cloud
+        // Cloud
         if (this.wind) {
             //moving clouds
             this.cloud1_pos = this.move_clouds(-13-this.wind_cloud_time)
