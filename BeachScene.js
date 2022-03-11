@@ -97,7 +97,7 @@ export class BeachScene extends Scene {
 
             shadow_rain_cloud_mat: new Material(new Shadow_Textured_Phong_Shader(1),
                 {
-                    color: color(1,1,1,1),
+                    color: color(0.5,0.5,0.5,1),
                     ambient: 0.3, specularity: 0,
                     color_texture: new Texture("assets/rainclouds.jpg"),
                     light_depth_texture: null
