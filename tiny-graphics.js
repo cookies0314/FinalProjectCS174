@@ -310,7 +310,7 @@ const Vector4 = tiny.Vector4 =
         }
 
         // In-fix operations: Use these for more readable math expressions.
-        equals(b) {
+        equals() {
             return this[0] == b[0] && this[1] == b[1] && this[2] == b[2] && this[3] == b[3]
         }
 
@@ -722,15 +722,13 @@ const Keyboard_Manager = tiny.Keyboard_Manager =
 
 
 const Graphics_Card_Object = tiny.Graphics_Card_Object =
-    class Graphics_Card_Object {
-        // ** Graphics_Card_Object** Extending this base class allows an object to
+    class Graphics_Card_Object {                                       // ** Graphics_Card_Object** Extending this base class allows an object to
         // copy itself onto a WebGL context on demand, whenever it is first used for
         // a GPU draw command on a context it hasn't seen before.
         constructor() {
             this.gpu_instances = new Map()
         }     // Track which GPU contexts this object has copied itself onto.
-        copy_onto_graphics_card(context, intial_gpu_representation) {
-            // copy_onto_graphics_card():  Our object might need to register to multiple
+        copy_onto_graphics_card(context, intial_gpu_representation) {                           // copy_onto_graphics_card():  Our object might need to register to multiple
             // GPU contexts in the case of multiple drawing areas.  If this is a new GPU
             // context for this object, copy the object to the GPU.  Otherwise, this
             // object already has been copied over, so get a pointer to the existing

@@ -1,6 +1,8 @@
 import { defs, tiny } from './examples/common.js';
 import { Shape_From_File } from './examples/obj-file-demo.js'
 import {Text_Line} from './examples/text-demo.js'
+import {Color_Phong_Shader, Shadow_Textured_Phong_Shader,
+    Depth_Texture_Shader_2D, Buffered_Texture, LIGHT_DEPTH_TEX_SIZE} from './examples/shadow-demo-shaders.js'
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Texture, Scene,
@@ -26,13 +28,20 @@ export class BeachScene extends Scene {
             cubeSand: new Cube(),
             cube: new Cube(),
             sky: new defs.Grid_Patch(200, 225, row_operation, column_operation, [[0, 10], [0, 1]]),
+
+            cloud: new Shape_From_File("assets/uploads_files_721601_cloud.obj"),
+            cloud1: new Shape_From_File("assets/island-cloud-mod.obj"),
+            cloud2: new Shape_From_File("assets/island-cloud-c.obj"),
+            umbrella: new Shape_From_File("assets/umbrella_2.obj"),
+            beachChair: new Shape_From_File("assets/BeachChair.obj"),
             moon: new defs.Subdivision_Sphere(3),
+
         };
 
         // *** Materials
         const bump = new defs.Fake_Bump_Map(1);
         this.materials = {
-            sun: new Material(new defs.Phong_Shader(),{ambient: 1, diffusivity: 0, color: hex_color("#FFFF00")}),
+            sun: new Material(new defs.Phong_Shader(),{ambient: 1, diffusivity: 0, specularity: 0, color: hex_color("#FFFF00")}),
             //old texturedSand (didn't work)
             // texturedSand: new Material(new Textured_Phong(), {
             //     color: hex_color("#FFFFFF"),
@@ -40,15 +49,89 @@ export class BeachScene extends Scene {
             //     texture: new Texture("assets/textured_sand.jpg")
             // }),
             texturedSand: new Material(bump, {ambient: 1, specularity: 0, texture: new Texture("assets/textured_sand.jpg")}),
-            texturedWater:  new Material(bump, {ambient: 1, texture: new Texture("assets/textured_water.jpeg")}),
-            texturedEdge:  new Material(bump, {ambient: 1, texture: new Texture("assets/beachwaves_sand.jpg")}),
+            // texturedSand: new Material(new defs.Phong_Shader(), {diffusivity: 0.5, color: color(0.761, 0.698, 0.502, 1.0)}),
+            texturedWater:  new Material(bump, {ambient: 1, specularity: 0.3, texture: new Texture("assets/textured_water.jpeg")}),
+
             texturedSky:  new Material(bump, {ambient: 1, texture: new Texture("assets/textured_sky.jpg")}),
             oldWater: new Material(new Textured_Phong(), {
                 color: hex_color("#000000"),
                 ambient: 1, diffusivity: 0.1, specularity: 0.1,
                 texture: new Texture("assets/textured_water.jpeg")
             }),
+            cloudMat: new Material(bump, {ambient: 1, specularity: 0, texture: new Texture("assets/cloud.jpg")}),
             texturedBeachBall:  new Material(bump, {ambient: 1, texture: new Texture("assets/beachball.jpg")}),
+
+
+            shadow_text_Ball: new Material(new Shadow_Textured_Phong_Shader(1),{
+                color: color(.5,.5,.5,1),
+                ambient: .4, diffusivity: .5, specularity: .5,
+                color_texture: new Texture("assets/beachball.jpg"),
+                light_depth_texture: null
+            }),
+
+            umbrellaMat: new Material(bump, {ambient: 1, specularity: 0, texture: new Texture("assets/umbrella.jpg")}),
+            chairMat: new Material(bump, {ambient: 1, specularity: 0, texture: new Texture("assets/chairtexture.jpg")}),
+            nighttexturedSand: new Material(bump, {ambient: 0.5, specularity: 0, texture: new Texture("assets/textured_sand.jpg")}),
+            // texturedSand: new Material(new defs.Phong_Shader(), {diffusivity: 0.5, color: color(0.761, 0.698, 0.502, 1.0)}),
+            nighttexturedWater:  new Material(bump, {ambient: 0.7, specularity: 0.2, texture: new Texture("assets/textured_water.jpeg")}),
+            nighttexturedSky:  new Material(bump, {ambient: 0.7, texture: new Texture("assets/starrynight.jpg")}),
+            nightcloudMat: new Material(bump, {ambient: 0.6, specularity: 0, texture: new Texture("assets/cloud.jpg")}),
+            nighttexturedBeachBall:  new Material(bump, {ambient: 0.6, specularity: 0.5, texture: new Texture("assets/beachball.jpg")}),
+            nightumbrellaMat: new Material(bump, {ambient: 0.6, specularity: 0, texture: new Texture("assets/umbrella.jpg")}),
+            nightchairMat: new Material(bump, {ambient: 0.6, specularity: 0, texture: new Texture("assets/chairtexture.jpg")}),
+            moonMat: new Material(bump, {ambient: 0.9, specularity: 0, texture: new Texture("assets/moon_2.jpg")}),
+            raincloudMat: new Material(bump, {ambient: 0.8, specularity: 0, texture: new Texture("assets/rainclouds.jpg")}),
+            nightraincloudMat: new Material(bump, {ambient: 0.6, specularity: 0, texture: new Texture("assets/rainclouds.jpg")}),
+            raintexturedSky:  new Material(bump, {ambient: 0.6, texture: new Texture("assets/textured_sky.jpg")}),
+            rain: new Material(new defs.Phong_Shader(),{ambient: 1, diffusivity: 0, specularity: 0, color: hex_color("#0492C2")}),
+        }
+        // this.initial_camera_location = Mat4.look_at(vec3(0, 10, 20), vec3(0, 0, 0), vec3(0, 1, 0));
+        this.initial_camera_location = Mat4.look_at(vec3(1, 0, 0), vec3(0, 0, 1), vec3(0, 1, 0));
+
+        this.light_position = 0;
+        this.sun_move = false;
+        this.wind = false;
+        this.cloud1_pos = -13
+        this.cloud2_pos = -6.5
+        this.cloud3_pos = -1
+        this.cloud4_pos = 3.5
+        this.cloud5_pos = 9
+        this.cloud6_pos = 15.0
+        this.cloud7_pos = -15
+        this.cloud8_pos = -9.75
+        this.cloud9_pos = -3.75
+        this.cloud10_pos = 1
+        this.cloud11_pos = 6.25
+        this.cloud12_pos = 11.5
+
+        this.prev_t = 0
+        this.prev_prev_t = 0
+
+        this.wind_cloud_time = 0
+        this.ball_roll = 0
+
+        this.waves = false
+        this.prev_wave_t = 0
+
+        this.night = false
+
+        this.rain = false
+
+        this.init_ok = false;
+
+        // // For the first pass
+        this.pure = new Material(new Color_Phong_Shader(), {
+        })
+        // // For light source
+        this.light_src = new Material(new defs.Phong_Shader(), {
+             color: color(1, 1, 1, 1), ambient: 1, diffusivity: 0, specularity: 0
+        });
+        // // For depth texture display
+        this.depth_tex =  new Material(new Depth_Texture_Shader_2D(), {
+            color: color(0, 0, .0, 1),
+            ambient: 1, diffusivity: 0, specularity: 0, texture: null
+        });
+
             moon: new Material (new defs.Phong_Shader(),
                 {color: hex_color("#C0C0C0"), ambient: 1, diffusivity: 0}),
                 
@@ -68,6 +151,7 @@ export class BeachScene extends Scene {
 
         this.saved_sun_angle  = 0.0;
         this.saved_sun_scale  = 0.0;
+
     }
 
 
@@ -86,21 +170,109 @@ export class BeachScene extends Scene {
         });
         this.new_line(); 
         this.new_line();
+        this.key_triggered_button("Sun Move", ["q"], () => {
+            this.sun_move = !this.sun_move
+
         
-        this.key_triggered_button("Sun Move", ["b"], () => {
-            this.sun_move = !this.sun_move;
-            this.saved_sun_angle = this.sun_angle;
-            this.saved_sun_scale = this.sun_scale;
-            this.moon_saved = this.moon_angle;
+        // this.key_triggered_button("Sun Move", ["b"], () => {
+        //     this.sun_move = !this.sun_move;
+        //     this.saved_sun_angle = this.sun_angle;
+        //     this.saved_sun_scale = this.sun_scale;
+        //     this.moon_saved = this.moon_angle;}
             
 
         })
-        this.key_triggered_button("Restart", ["r"], () => this.attached = () =>
-            this.initial_camera_location
-        );
+        this.key_triggered_button("Toggle Wind", ["w"], () => {
+            this.wind = !this.wind
+        })
+        this.key_triggered_button("Reset", ["r"], () => {
+            this.wind = false
+            this.rain = false
+            this.waves = false
+            this.night = false
+        });
+        this.key_triggered_button("Toggle Waves", ["a"], () => {
+            this.waves = !this.waves
+        })
+
+        this.key_triggered_button("Toggle Night/Day", ["n"], () => {
+            this.night = !this.night
+        })
+
+        this.key_triggered_button("Toggle Rain", ["i"], () => {
+            this.rain = !this.rain
+        })
         // this.new_line();
 
     }
+
+
+     texture_buffer_init(gl) {
+    //     // Depth Texture
+         this.lightDepthTexture = gl.createTexture();
+         // Bind it to TinyGraphics
+         this.light_depth_texture = new Buffered_Texture(this.lightDepthTexture);
+         this.materials.shadow_text_Ball.light_depth_texture = this.lightDepthTexture
+    //     // this.floor.light_depth_texture = this.light_depth_texture
+
+         this.lightDepthTextureSize = LIGHT_DEPTH_TEX_SIZE;
+         gl.bindTexture(gl.TEXTURE_2D, this.lightDepthTexture);
+         gl.texImage2D(
+             gl.TEXTURE_2D,      // target
+             0,                  // mip level
+             gl.DEPTH_COMPONENT, // internal format
+             this.lightDepthTextureSize,   // width
+             this.lightDepthTextureSize,   // height
+             0,                  // border
+             gl.DEPTH_COMPONENT, // format
+             gl.UNSIGNED_INT,    // type
+             null);              // data
+         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+         // Depth Texture Buffer
+         this.lightDepthFramebuffer = gl.createFramebuffer();
+         gl.bindFramebuffer(gl.FRAMEBUFFER, this.lightDepthFramebuffer);
+         gl.framebufferTexture2D(
+             gl.FRAMEBUFFER,       // target
+             gl.DEPTH_ATTACHMENT,  // attachment point
+             gl.TEXTURE_2D,        // texture target
+             this.lightDepthTexture,         // texture
+             0);                   // mip level
+         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+         // create a color texture of the same size as the depth texture
+        // see article why this is needed_
+         this.unusedTexture = gl.createTexture();
+         gl.bindTexture(gl.TEXTURE_2D, this.unusedTexture);
+         gl.texImage2D(
+            gl.TEXTURE_2D,
+             0,
+             gl.RGBA,
+             this.lightDepthTextureSize,
+             this.lightDepthTextureSize,
+             0,
+             gl.RGBA,
+            gl.UNSIGNED_BYTE,
+             null,
+         );
+         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+         // attach it to the framebuffer
+         gl.framebufferTexture2D(
+             gl.FRAMEBUFFER,        // target
+             gl.COLOR_ATTACHMENT0,  // attachment point
+             gl.TEXTURE_2D,         // texture target
+             this.unusedTexture,         // texture
+             0);                    // mip level
+         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+     }
+
+
 
     // NOTE: still need to figure out how to get camera to be angled
     // sets camera to be in player's pov (follows player)
@@ -115,13 +287,25 @@ export class BeachScene extends Scene {
     //     }
     // }
 
+
+
     //Draws a single block of sand and moves the sand_transform to the next block
     draw_sand(context, program_state, sand_transform) {
         const t = this.t = program_state.animation_time / 1000;
         let rotation_angle = 0;
 
         sand_transform = sand_transform.times(Mat4.translation(2,0,0));
-        this.shapes.cubeSand.draw(context, program_state, sand_transform, this.materials.texturedSand);
+        if (this.night) {
+            this.shapes.cubeSand.draw(context, program_state, sand_transform, this.materials.nighttexturedSand);
+        }
+        else {
+            if (this.rain) {
+                this.shapes.cubeSand.draw(context, program_state, sand_transform, this.materials.texturedSand.override({ambient: 0.9}));
+            } else {
+                this.shapes.cubeSand.draw(context, program_state, sand_transform, this.materials.texturedSand);
+            }
+        }
+        // this.shapes.cubeSand.draw(context, program_state, sand_transform, this.floor);
         return sand_transform;
     }
 
@@ -131,61 +315,97 @@ export class BeachScene extends Scene {
         let rotation_angle = 0;
 
         water_transform = water_transform.times(Mat4.translation(2,0,0));
-        this.shapes.cube.draw(context, program_state, water_transform, this.materials.texturedWater);
+        if (this.night) {
+            this.shapes.cube.draw(context, program_state, water_transform, this.materials.nighttexturedWater);
+        }
+        else {
+            if (this.rain) {
+                this.shapes.cube.draw(context, program_state, water_transform, this.materials.texturedWater.override({ambient: 0.9}));
+            } else {
+                this.shapes.cube.draw(context, program_state, water_transform, this.materials.texturedWater);
+            }
+
+        }
+        // this.shapes.cube.draw(context, program_state, water_transform, this.floor);
         return water_transform;
     }
 
-    // Draws the edge of water and sand
-    draw_edge(context, program_state, edge_transform) {
-        const t = this.t = program_state.animation_time / 1000;
-        let rotation_angle = 0;
+    move_clouds(position, t) {
+        if (position < -18) {
+            while (position < -18) {
+                position += 33.5
+            }
 
-        edge_transform = edge_transform.times(Mat4.translation(2,0,0));
-        this.shapes.cube.draw(context, program_state, edge_transform, this.materials.texturedEdge);
-        return edge_transform;
+
+            return position
+        }
+        else {
+            return position
+        }
     }
 
-
-    display(context, program_state) {
-        // display():  Called once per frame of animation.
-        // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
-        
-        if (!context.scratchpad.controls) {
-            this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
-            // Define the global camera and projection matrices, which are stored in program_state.
-            program_state.set_camera(Mat4.translation(0, -0.8, -20));
-            // program_state.set_camera(this.initial_camera_location);
-        }
-
-        if(this.attached){
-            if(this.attached() == this.initial_camera_location) {
-                let location = this.initial_camera_location;
-                // program_state.set_camera(Mat4.inverse(location));
-                program_state.set_camera(location);
+    move_rain(position) {
+        if (position < -2) {
+            while (position < -2) {
+                position += 17
             }
+
+            return position
+        }
+        else {
+            return position
+        }
+    }
+
+    render_scene(context, program_state, shadow_pass, draw_light_source = false, draw_shadow= false)
+    {
+        // shadow_pass: true if this is the second pass that draw the shadow.
+        // draw_light_source: true if we want to draw the light source.
+        // draw_shadow: true if we want to draw the shadow
+        let light_position = this.light_position;
+        let light_color = this.light_color;
+        const t = program_state.animation_time/1000;
+        
+        program_state.draw_shadow = draw_shadow;
+
+        if (draw_light_source && shadow_pass) {
+            this.shapes.sun.draw(context, program_state,
+                Mat4.translation(light_position[0], light_position[1], light_position[2]).times(Mat4.scale(.5,.5,.5)),
+                this.light_src.override({color: light_color}));
         }
 
+        let wind_time = 0
+        if (this.wind) {
+            wind_time = t - this.prev_t
+            this.wind_cloud_time += t - this.prev_prev_t
+        } else {
+            this.prev_t = t
+            this.ball_roll = 0
+        }
 
-        program_state.projection_transform = Mat4.perspective(
-            Math.PI / 4, context.width / context.height, .1, 100000);
+        this.prev_prev_t = t
 
 
-        const t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
 
         //  Create Sun
         let sun_transform = Mat4.identity();
+        let sun_angle = -2*t;
+        // let sun_scale = 2*Math.cos(t);
+        let sun_scale = 1.5
 
-        this.sun_angle = -1*t;
-        // this.sun_scale = 2*Math.cos(t);
         //need to find better rotation
 
         // May need to debug, but this is for the sun to stay in position if "sun" button is pushed
         if(this.sun_move)
         {
-            sun_transform = sun_transform.times(Mat4.rotation(this.sun_angle,0,0,1))
-                .times(Mat4.translation(0,8,0))
-                .times(Mat4.scale(2,2,2));
-            //implement pause at current position
+            sun_angle = 0;
+            sun_scale = 1.5;
+             //implement pause at current position
+            // sun_transform = sun_transform.times(Mat4.rotation(this.sun_angle,0,0,1))
+            //     .times(Mat4.translation(0,8,0))
+            //     .times(Mat4.scale(2,2,2));
+
+           
         }
         else{
             sun_transform = sun_transform.times(Mat4.rotation(this.saved_sun_angle,0,0,1))
@@ -194,35 +414,46 @@ export class BeachScene extends Scene {
         }
 
 
+        sun_transform = sun_transform.times(Mat4.rotation(sun_angle,0,0,1));
+        sun_transform = sun_transform.times(Mat4.translation(0,8,0));
 
-        // Sun Lighting
-        // The parameters of the Light are: position, color, size
-        const angle = Math.sin(t);
-        const light_position = Mat4.rotation(angle, 1, 0, 0).times(vec4(8, 6, 1, 0));
-        program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000000)];
+        if (this.night) {
+            sun_transform = sun_transform.times(Mat4.scale(1.2,1.2,1.2));
+        } else {
+            sun_transform = sun_transform.times(Mat4.scale(sun_scale,sun_scale,sun_scale));
+        }
 
+
+
+
+        // program_state.lights = [new Light(vec4(0, 0, 0, 1), color(1.0, Math.abs((Math.sin(Math.PI*(t/20)))), Math.abs((Math.sin(Math.PI*(t/20)))), 1.0), 10)];
         // const light_position = Mat4.rotation(angle, 1, 0, 0).times(vec4(0, 0, 1, 0));
         // program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000000)];
-
-        this.shapes.sun.draw(context, program_state, sun_transform, this.materials.sun);
-
-        //moon
-        let moon_transform = Mat4.identity();
-        this.moon_angle    = 0.95*t;
-        if(this.sun_move){
-            moon_transform = moon_transform.times(Mat4.rotation(this.moon_angle, 0,0,1));
-            moon_transform = moon_transform.times(Mat4.translation(6,-8,0));   
-        }
-        else{
-            moon_transform = moon_transform.times(Mat4.rotation(this.moon_saved, 0,0,1));
-            moon_transform = moon_transform.times(Mat4.translation(6,-8,0));
+        if (this.night) {
+            this.shapes.sun.draw(context, program_state, sun_transform, this.materials.moonMat);
+        } else {
+            this.shapes.sun.draw(context, program_state, sun_transform, this.materials.sun);
         }
 
-        this.shapes.moon.draw(context, program_state, moon_transform, this.materials.moon);
+        // this.shapes.sun.draw(context, program_state, sun_transform, this.materials.sun);
+
+        // //moon
+        // let moon_transform = Mat4.identity();
+        // this.moon_angle    = 0.95*t;
+        // if(this.sun_move){
+        //     moon_transform = moon_transform.times(Mat4.rotation(this.moon_angle, 0,0,1));
+        //     moon_transform = moon_transform.times(Mat4.translation(6,-8,0));   
+        // }
+        // else{
+        //     moon_transform = moon_transform.times(Mat4.rotation(this.moon_saved, 0,0,1));
+        //     moon_transform = moon_transform.times(Mat4.translation(6,-8,0));
+        // }
+
+        // this.shapes.moon.draw(context, program_state, moon_transform, this.materials.moon);
 
 
         //Sand, water, sky transforms
-            //Sand and water transform stretches sand & water to take up the whole beach
+        //Sand and water transform stretches sand & water to take up the whole beach
         let sand_transform = Mat4.identity();
         sand_transform     = sand_transform.times(Mat4.translation(-22, -2, 5))
             .times(Mat4.scale(1,-1.5,10));
@@ -236,55 +467,369 @@ export class BeachScene extends Scene {
         sky_transform = sky_transform.times(Mat4.translation(-8,4,-5.2));
 
         //Draw the sky
-        this.shapes.sky.draw(context, program_state, sky_transform, this.materials.texturedSky);
+        if (this.night) {
+            this.shapes.sky.draw(context, program_state, sky_transform, this.materials.nighttexturedSky);
+        } else {
+            if (this.rain) {
+                this.shapes.sky.draw(context, program_state, sky_transform, this.materials.raintexturedSky);
+            } else {
+                this.shapes.sky.draw(context, program_state, sky_transform, this.materials.texturedSky);
+            }
+        }
+        
+        // this.shapes.sky.draw(context, program_state, sky_transform, this.floor);
 
-        // Drawing edge of 
-        // let edge_transform = Mat4.identity();
-        // edge_transform = edge_transform.times(Mat4.translation(-5, -2, 5))
-        //     .times(Mat4.scale(1,-1.5,10))
+        //Make rudimentary waves
+        // if(Math.floor(t) % 2 != 0){
+        //
+        //     water_transform = Mat4.identity();
+        //     water_transform = water_transform.times(Mat4.translation(-2, -2, 5))
+        //         .times(Mat4.scale(1,-1.5,10));
+        //
+        //     for (let i = 0; i < 10; i++) {
+        //         // this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
+        //         sand_transform = this.draw_sand(context, program_state, sand_transform);
+        //     }
+        //
+        //     for (let i = 0; i < 20; i++) {
+        //         // this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
+        //         water_transform = this.draw_water(context, program_state, water_transform);
+        //     }
+        // }
+        //
+        // else{
+        //     //Loops to draw the sand and the water blocks
+        //     for (let i = 0; i < 12; i++) {
+        //         // this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
+        //         sand_transform = this.draw_sand(context, program_state, sand_transform);
+        //     }
+        //
+        //
+        //     for (let i = 0; i < 20; i++) {
+        //         // this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
+        //         water_transform = this.draw_water(context, program_state, water_transform);
+        //     }
+        // }
 
-        //Make rudimentary waves 
-        if(Math.floor(t) % 2 != 0){
+        water_transform = Mat4.identity();
 
-            water_transform = Mat4.identity();
-            water_transform = water_transform.times(Mat4.translation(-2, -2, 5))
+        let wave_time = 0
+        if (this.waves) {
+            wave_time = t - this.prev_wave_t
+        } else {
+            this.prev_wave_t = t
+        }
+
+
+        if (this.waves) {
+            water_transform = water_transform.times(Mat4.translation(-2*(0.4*Math.sin(wave_time+(Math.PI*1.5))+1.4), -1.95, 5))
                 .times(Mat4.scale(1,-1.5,10));
-
-            for (let i = 0; i < 10; i++) {
-                // this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
-                sand_transform = this.draw_sand(context, program_state, sand_transform);
-            }
-            for (let i = 0; i < 20; i++) {
-                // this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
-                water_transform = this.draw_water(context, program_state, water_transform);
-            }
-        }
-
-        else{
-            //Loops to draw the sand and the water blocks
-            for (let i = 0; i < 12; i++) {
-                // this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
-                sand_transform = this.draw_sand(context, program_state, sand_transform);
-            }
-
-
-            for (let i = 0; i < 20; i++) {
-                // this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
-                water_transform = this.draw_water(context, program_state, water_transform);
-            }
+        } else {
+            water_transform = water_transform.times(Mat4.translation(-2, -1.95, 5))
+                .times(Mat4.scale(1,-1.5,10));
         }
 
 
+        for (let i = 0; i < 10; i++) {
+            // this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
+            sand_transform = this.draw_sand(context, program_state, sand_transform);
+        }
 
+        for (let i = 0; i < 20; i++) {
+            // this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
+            water_transform = this.draw_water(context, program_state, water_transform);
+        }
+
+        let chair_transform = Mat4.identity();
+        chair_transform = chair_transform.times(Mat4.translation(-8.5, 0.75, 3)).times(Mat4.scale(0.6,0.6,0.6));
+        if (this.night){
+            this.shapes.beachChair.draw(context, program_state, chair_transform, this.materials.nightchairMat)
+        } else {
+            if (this.rain) {
+                this.shapes.beachChair.draw(context, program_state, chair_transform, this.materials.chairMat.override({ambient: 0.9}))
+            } else {
+                this.shapes.beachChair.draw(context, program_state, chair_transform, this.materials.chairMat)
+            }
+
+        }
         //Create the beach ball
         let beachBall_transform = Mat4.identity();
-        beachBall_transform = beachBall_transform.times(Mat4.translation(-3, 0.2, 3))
-            .times(Mat4.scale(0.7,0.7,0.7));
+        beachBall_transform = beachBall_transform.times(Mat4.translation(-3, 0, 3)).times(Mat4.scale(0.5,0.5,0.5));
 
-        this.shapes.beachBall.draw(context, program_state, beachBall_transform, this.materials.texturedBeachBall);
+        if (this.wind) {
+            if (-2*wind_time > -7.85) {
+                beachBall_transform = beachBall_transform.times(Mat4.translation(-2*wind_time, 0 , 0))
+                beachBall_transform = beachBall_transform.times(Mat4.rotation(2*wind_time, 0, 0, 1))
+                this.ball_roll = 2*wind_time
+            } else {
+                beachBall_transform = beachBall_transform.times(Mat4.translation(-7.85, 0 , 0))
+                beachBall_transform = beachBall_transform.times(Mat4.rotation(this.ball_roll, 0, 0, 1))
+            }
+        }
+
+        if (this.night) {
+            this.shapes.beachBall.draw(context, program_state, beachBall_transform, this.materials.nighttexturedBeachBall);
+        } else {
+            if (this.rain) {
+                this.shapes.beachBall.draw(context, program_state, beachBall_transform, this.materials.texturedBeachBall.override({ambient: 0.9}));
+            } else {
+                this.shapes.beachBall.draw(context, program_state, beachBall_transform, shadow_pass? this.materials.shadow_text_Ball: this.pure);
+
+        }
+
+        let umbrella_movement = 0.5*(Math.sin(wind_time)) + 1
+        let umbrella_transform = Mat4.identity()
+        umbrella_transform = umbrella_transform.times(Mat4.scale(0.9, 0.9, 0.9)).times(Mat4.rotation(-Math.PI/2, 1,0, 0)).times(Mat4.translation(-12, -3, 3.35))
+        umbrella_transform = umbrella_transform.times(Mat4.translation(0, 0, -4))
+        if (this.wind) {
+            umbrella_transform = umbrella_transform.times(Mat4.rotation(-umbrella_movement*(Math.PI/16), 0, 1, 0))
+        } else {
+            umbrella_transform = umbrella_transform.times(Mat4.rotation(-(Math.PI/16), 0, 1, 0))
+        }
+
+        umbrella_transform = umbrella_transform.times(Mat4.translation(0, 0, 4))
+        if (this.night) {
+            this.shapes.umbrella.draw(context, program_state, umbrella_transform, this.materials.nightumbrellaMat);
+        } else {
+            if (this.rain) {
+                this.shapes.umbrella.draw(context, program_state, umbrella_transform, this.materials.umbrellaMat.override({ambient: 0.9}));
+            } else {
+                this.shapes.umbrella.draw(context, program_state, umbrella_transform, this.materials.umbrellaMat);
+            }
+        }
+
+        /*
+        let test_ball_transform = Mat4.identity();
+        test_ball_transform = test_ball_transform.times(Mat4.translation(-5,7,0));
+        this.shapes.beachBall.draw(context,program_state,test_ball_transform, shadow_pass? this.materials.shadow_text_Ball: this.pure);
+        */
+
+
+        // Cloud
+        if (this.wind) {
+            //moving clouds
+            this.cloud1_pos = this.move_clouds(-13-this.wind_cloud_time)
+            this.cloud2_pos = this.move_clouds(-6.5-this.wind_cloud_time)
+            this.cloud3_pos = this.move_clouds(-1-this.wind_cloud_time)
+            this.cloud4_pos = this.move_clouds(3.5-this.wind_cloud_time)
+            this.cloud5_pos = this.move_clouds(9-this.wind_cloud_time)
+            this.cloud6_pos = this.move_clouds(15-this.wind_cloud_time)
+            this.cloud7_pos = this.move_clouds(-15-this.wind_cloud_time)
+            this.cloud8_pos = this.move_clouds(-9.75-this.wind_cloud_time)
+            this.cloud9_pos = this.move_clouds(-3.75-this.wind_cloud_time)
+            this.cloud10_pos = this.move_clouds(1-this.wind_cloud_time)
+            this.cloud11_pos = this.move_clouds(6.25-this.wind_cloud_time)
+            this.cloud12_pos = this.move_clouds(11.5-this.wind_cloud_time)
+        }
+        let cloud_transform = Mat4.identity();
+        cloud_transform = cloud_transform.times(Mat4.translation(this.cloud1_pos, 5.5, 0)).times(Mat4.scale(1.2, 1.2, 1.2))
+
+        let cloud_transform1 = Mat4.identity();
+        cloud_transform1 = cloud_transform1.times(Mat4.translation(this.cloud2_pos, 5.5, 0)).times(Mat4.scale(1.2, 1.2, 1.2))
+
+        let cloud_transform2 = Mat4.identity();
+        cloud_transform2 = cloud_transform2.times(Mat4.translation(this.cloud3_pos, 5.5, 0)).times(Mat4.scale(1.2, 1.2, 1.2))
+
+        let cloud_transform3 = Mat4.identity();
+        cloud_transform3 = cloud_transform3.times(Mat4.translation(this.cloud4_pos, 5.5, 0)).times(Mat4.scale(1.2, 1.2, 1.2))
+
+        let cloud_transform4 = Mat4.identity();
+        cloud_transform4 = cloud_transform4.times(Mat4.translation(this.cloud5_pos, 5.5, 0)).times(Mat4.scale(1.2, 1.2, 1.2))
+
+        let cloud_transform5 = Mat4.identity();
+        cloud_transform5 = cloud_transform5.times(Mat4.translation(this.cloud6_pos, 5.5, 0)).times(Mat4.scale(1.2, 1.2, 1.2))
+
+        let cloud_transform6 = Mat4.identity();
+        cloud_transform6 = cloud_transform6.times(Mat4.translation(this.cloud7_pos, 5.5, 0)).times(Mat4.scale(1.2, 1.2, 1.2))
+
+        let cloud_transform7 = Mat4.identity();
+        cloud_transform7 = cloud_transform7.times(Mat4.translation(this.cloud8_pos, 5.5, 0)).times(Mat4.scale(1.2, 1.2, 1.2))
+        let cloud_transform8 = Mat4.identity();
+        cloud_transform8 = cloud_transform8.times(Mat4.translation(this.cloud9_pos, 5.5, 0)).times(Mat4.scale(1.2, 1.2, 1.2))
+
+        let cloud_transform9 = Mat4.identity();
+        cloud_transform9 = cloud_transform9.times(Mat4.translation(this.cloud10_pos, 5.5, 0)).times(Mat4.scale(1.2, 1.2, 1.2))
+
+        let cloud_transform10 = Mat4.identity();
+        cloud_transform10 = cloud_transform10.times(Mat4.translation(this.cloud11_pos, 5.5, 0)).times(Mat4.scale(1.2, 1.2, 1.2))
+
+        let cloud_transform11 = Mat4.identity();
+        cloud_transform11 = cloud_transform11.times(Mat4.translation(this.cloud12_pos, 5.5, 0)).times(Mat4.scale(1.2, 1.2, 1.2))
+        if (this.rain) {
+            if (this.night) {
+                this.shapes.cloud.draw(context, program_state, cloud_transform, this.materials.nightraincloudMat);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform1, this.materials.nightraincloudMat);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform2, this.materials.nightraincloudMat);
+                this.shapes.cloud.draw(context, program_state, cloud_transform3, this.materials.nightraincloudMat);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform4, this.materials.nightraincloudMat);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform5, this.materials.nightraincloudMat);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform6, this.materials.nightraincloudMat);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform7, this.materials.nightraincloudMat);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform8, this.materials.nightraincloudMat);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform9, this.materials.nightraincloudMat);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform10, this.materials.nightraincloudMat);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform11, this.materials.nightraincloudMat);
+            } else {
+                this.shapes.cloud.draw(context, program_state, cloud_transform, this.materials.raincloudMat);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform1, this.materials.raincloudMat);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform2, this.materials.raincloudMat);
+                this.shapes.cloud.draw(context, program_state, cloud_transform3, this.materials.raincloudMat);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform4, this.materials.raincloudMat);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform5, this.materials.raincloudMat);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform6, this.materials.raincloudMat);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform7, this.materials.raincloudMat);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform8, this.materials.raincloudMat);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform9, this.materials.raincloudMat);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform10, this.materials.raincloudMat);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform11, this.materials.raincloudMat);
+            }
+        }
+        else {
+            if (this.night) {
+                this.shapes.cloud.draw(context, program_state, cloud_transform, this.materials.nightcloudMat);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform1, this.materials.nightcloudMat);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform2, this.materials.nightcloudMat);
+                this.shapes.cloud.draw(context, program_state, cloud_transform3, this.materials.nightcloudMat);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform4, this.materials.nightcloudMat);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform5, this.materials.nightcloudMat);
+            } else {
+                this.shapes.cloud.draw(context, program_state, cloud_transform, this.materials.cloudMat);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform1, this.materials.cloudMat);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform2, this.materials.cloudMat);
+                this.shapes.cloud.draw(context, program_state, cloud_transform3, this.materials.cloudMat);
+                this.shapes.cloud1.draw(context, program_state, cloud_transform4, this.materials.cloudMat);
+                this.shapes.cloud2.draw(context, program_state, cloud_transform5, this.materials.cloudMat);
+            }
+        }
+
+        if (this.rain) {
+            let rain_t = Mat4.identity()
+            rain_t = rain_t.times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-330, this.move_rain(7-(12*t)), 0))
+            this.shapes.cube.draw(context, program_state, rain_t, this.materials.rain)
+            let rain_t1 = Mat4.identity().times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-330, this.move_rain(1-(12*t)), 0))
+            this.shapes.cube.draw(context, program_state, rain_t1, this.materials.rain)
+            let rain_t2 = Mat4.identity().times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-330, this.move_rain(13-(12*t)), 0))
+            this.shapes.cube.draw(context, program_state, rain_t2, this.materials.rain)
+            let rain_t3 = Mat4.identity()
+            rain_t3 = rain_t3.times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-315, this.move_rain(8-(12*t)), 0))
+            this.shapes.cube.draw(context, program_state, rain_t3, this.materials.rain)
+            let rain_t4 = Mat4.identity().times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-315, this.move_rain(2-(12*t)), 0))
+            this.shapes.cube.draw(context, program_state, rain_t4, this.materials.rain)
+            let rain_t5 = Mat4.identity().times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-315, this.move_rain(14-(12*t)), 0))
+            this.shapes.cube.draw(context, program_state, rain_t5, this.materials.rain)
+            let rain_t6 = Mat4.identity()
+            rain_t6 = rain_t6.times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-300, this.move_rain(9-(12*t)), 0))
+            this.shapes.cube.draw(context, program_state, rain_t6, this.materials.rain)
+            let rain_t7 = Mat4.identity().times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-300, this.move_rain(3-(12*t)), 0))
+            this.shapes.cube.draw(context, program_state, rain_t7, this.materials.rain)
+            let rain_t8 = Mat4.identity().times(Mat4.scale(0.05, 0.3, 0.05)).times(Mat4.translation(-300, this.move_rain(15-(12*t)), 0))
+            this.shapes.cube.draw(context, program_state, rain_t8, this.materials.rain)
+            for (let i = 0; i < 15; i++) {
+                rain_t = rain_t.times(Mat4.translation(45, 0, 0))
+                rain_t1 = rain_t1.times(Mat4.translation(45, 0, 0))
+                rain_t2 = rain_t2.times(Mat4.translation(45, 0, 0))
+                rain_t3 = rain_t3.times(Mat4.translation(45, 0, 0))
+                rain_t4 = rain_t4.times(Mat4.translation(45, 0, 0))
+                rain_t5 = rain_t5.times(Mat4.translation(45, 0, 0))
+                rain_t6 = rain_t6.times(Mat4.translation(45, 0, 0))
+                rain_t7 = rain_t7.times(Mat4.translation(45, 0, 0))
+                rain_t8 = rain_t8.times(Mat4.translation(45, 0, 0))
+                this.shapes.cube.draw(context, program_state, rain_t, this.materials.rain)
+                this.shapes.cube.draw(context, program_state, rain_t1, this.materials.rain)
+                this.shapes.cube.draw(context, program_state, rain_t2, this.materials.rain)
+                this.shapes.cube.draw(context, program_state, rain_t3, this.materials.rain)
+                this.shapes.cube.draw(context, program_state, rain_t4, this.materials.rain)
+                this.shapes.cube.draw(context, program_state, rain_t5, this.materials.rain)
+                this.shapes.cube.draw(context, program_state, rain_t6, this.materials.rain)
+                this.shapes.cube.draw(context, program_state, rain_t7, this.materials.rain)
+                this.shapes.cube.draw(context, program_state, rain_t8, this.materials.rain)
+            }
+        }
+
+
+    }
+
+
+    display(context, program_state) {
+        // display():  Called once per frame of animation.
+        // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
+
+        const t = program_state.animation_time;
+        const gl = context.context;
+        //
+        if (!this.init_ok) {
+             const ext = gl.getExtension('WEBGL_depth_texture');
+             if (!ext) {
+                 return alert('need WEBGL_depth_texture');  // eslint-disable-line
+             }
+             this.texture_buffer_init(gl);
+
+             this.init_ok = true;
+        }
+
+        if (!context.scratchpad.controls) {
+            this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
+            // Define the global camera and projection matrices, which are stored in program_state.
+            program_state.set_camera(Mat4.translation(1.33, -2.13, -20));
+            // program_state.set_camera(Mat4.translation(0, -0.8, -20));
+            // program_state.set_camera(this.initial_camera_location);
+        }
+
+
+        //TODO: START HERE
+
+        //program_state.projection_transform = Mat4.perspective(
+            //Math.PI / 4, context.width / context.height, .1, 100000);
+        //VOID THIS^^
 
 
 
+        const angle = Math.sin(t); //maybe change this???
+
+        this.light_position = Mat4.translation(0,8,0).times(vec4(3, 6, 0, 1));
+        this.light_color = color(
+            0.667 + Math.sin(t/500) / 3,
+            0.667 + Math.sin(t/1500) / 3,
+            0.667 + Math.sin(t/3500) / 3,
+            1
+        );
+        program_state.lights = [new Light(this.light_position, color(1, 1, 1, 1), 1000)];
+        this.light_view_target = vec4(0, 0, 0, 1);
+        this.light_field_of_view = 130 * Math.PI / 180; // 130 degree
+
+
+        // program_state.lights = [new Light(vec4(0, 8, 0, 1), color(1, 1, 1, 1), 1000)];
+        //program_state.lights = [new Light(this.light_position, color(1,1,1,1), 1000)];
+        // //
+
+
+        // // // Step 1: set the perspective and camera to the POV of light
+        //const light_view_mat = this.initial_camera_location;
+        const light_view_mat = Mat4.look_at(
+            vec3(this.light_position[0], this.light_position[1], this.light_position[2]),
+            vec3(this.light_view_target[0], this.light_view_target[1], this.light_view_target[2]),
+            vec3(0, 1, 0), // assume the light to target will have a up dir of +y, maybe need to change according to your case
+        );
+        const light_proj_mat = Mat4.perspective(this.light_field_of_view, 1, 0.5, 500);
+        // // Bind the Depth Texture Buffer
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.lightDepthFramebuffer);
+        gl.viewport(0, 0, this.lightDepthTextureSize, this.lightDepthTextureSize);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        // // // Prepare uniforms
+        program_state.light_view_mat = light_view_mat;
+        program_state.light_proj_mat = light_proj_mat;
+        program_state.light_tex_mat = light_proj_mat;
+        program_state.view_mat = light_view_mat;
+        program_state.projection_transform = light_proj_mat;
+        this.render_scene(context, program_state, false,false, false);
+
+
+        // Step 2: unbind, draw to the canvas
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        program_state.view_mat = program_state.camera_inverse;
+        program_state.projection_transform = Mat4.perspective(Math.PI / 4, context.width / context.height, 0.5, 500);
+        this.render_scene(context, program_state, true,true, true);
 
     }
 }
