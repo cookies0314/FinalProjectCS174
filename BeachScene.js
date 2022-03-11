@@ -771,8 +771,15 @@ export class BeachScene extends Scene {
         let light_transform = Mat4.identity();
 
         this.light_position = Mat4.translation(0,10,0).times(vec4(1, -.5, 0, 1));
-        this.light_color = color(1,1,0,1);
 
+        if(!this.night)
+        {
+            this.light_color = color(1,1,0,1);
+        }
+        else
+        {
+            this.light_color = color(1,1,1,1);
+        }
         program_state.lights = [new Light(this.light_position,this.light_color, 1000)];
         this.light_view_target = vec4(0, 0, 0, 1);
         this.light_field_of_view = 130 * Math.PI / 180; // 130 degree
