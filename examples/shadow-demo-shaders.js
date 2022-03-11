@@ -7,9 +7,9 @@ const {Cube, Axis_Arrows, Textured_Phong, Phong_Shader, Basic_Shader, Subdivisio
 export const LIGHT_DEPTH_TEX_SIZE = 2048;
 
 export class Color_Phong_Shader extends defs.Phong_Shader {
-    vertex_glsl_code() {
-        // ********* VERTEX SHADER *********
-        return this.shared_glsl_code() + `
+        vertex_glsl_code() {
+            // ********* VERTEX SHADER *********
+            return this.shared_glsl_code() + `
                 varying vec2 f_tex_coord;
                 attribute vec3 position, normal;                            
                 // Position is expressed in object coordinates.
@@ -27,13 +27,13 @@ export class Color_Phong_Shader extends defs.Phong_Shader {
                     // Turn the per-vertex texture coordinate into an interpolated variable.
                     f_tex_coord = texture_coord;
                   } `;
-    }
+        }
 
-    fragment_glsl_code() {
-        // ********* FRAGMENT SHADER *********
-        // A fragment is a pixel that's overlapped by the current triangle.
-        // Fragments affect the final image or get discarded due to depth.
-        return this.shared_glsl_code() + `
+        fragment_glsl_code() {
+            // ********* FRAGMENT SHADER *********
+            // A fragment is a pixel that's overlapped by the current triangle.
+            // Fragments affect the final image or get discarded due to depth.
+            return this.shared_glsl_code() + `
                 uniform sampler2D texture;
                 uniform sampler2D light_depth_texture;
                 uniform mat4 light_view_mat;
@@ -44,56 +44,56 @@ export class Color_Phong_Shader extends defs.Phong_Shader {
                                                                              // Compute the final color with contributions from lights:
                     gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
                   } `;
-    }
-
-    send_gpu_state(gl, gpu, gpu_state, model_transform) {
-        // send_gpu_state():  Send the state of our whole drawing context to the GPU.
-        const O = vec4(0, 0, 0, 1), camera_center = gpu_state.camera_transform.times(O).to3();
-        gl.uniform3fv(gpu.camera_center, camera_center);
-        // Use the squared scale trick from "Eric's blog" instead of inverse transpose matrix:
-        const squared_scale = model_transform.reduce(
-            (acc, r) => {
-                return acc.plus(vec4(...r).times_pairwise(r))
-            }, vec4(0, 0, 0, 0)).to3();
-        gl.uniform3fv(gpu.squared_scale, squared_scale);
-        // Send the current matrices to the shader.  Go ahead and pre-compute
-        // the products we'll need of the of the three special matrices and just
-        // cache and send those.  They will be the same throughout this draw
-        // call, and thus across each instance of the vertex shader.
-        // Transpose them since the GPU expects matrices as column-major arrays.
-        const PCM = gpu_state.projection_transform.times(gpu_state.view_mat).times(model_transform);
-        gl.uniformMatrix4fv(gpu.model_transform, false, Matrix.flatten_2D_to_1D(model_transform.transposed()));
-        gl.uniformMatrix4fv(gpu.projection_camera_model_transform, false, Matrix.flatten_2D_to_1D(PCM.transposed()));
-        // shadow related
-        gl.uniformMatrix4fv(gpu.light_view_mat, false, Matrix.flatten_2D_to_1D(gpu_state.light_view_mat.transposed()));
-        gl.uniformMatrix4fv(gpu.light_proj_mat, false, Matrix.flatten_2D_to_1D(gpu_state.light_proj_mat.transposed()));
-
-        // Omitting lights will show only the material color, scaled by the ambient term:
-        if (!gpu_state.lights.length)
-            return;
-
-        const light_positions_flattened = [], light_colors_flattened = [];
-        for (let i = 0; i < 4 * gpu_state.lights.length; i++) {
-            light_positions_flattened.push(gpu_state.lights[Math.floor(i / 4)].position[i % 4]);
-            light_colors_flattened.push(gpu_state.lights[Math.floor(i / 4)].color[i % 4]);
         }
-        gl.uniform4fv(gpu.light_positions_or_vectors, light_positions_flattened);
-        gl.uniform4fv(gpu.light_colors, light_colors_flattened);
-        gl.uniform1fv(gpu.light_attenuation_factors, gpu_state.lights.map(l => l.attenuation));
-    }
 
-    update_GPU(context, gpu_addresses, gpu_state, model_transform, material) {
-        // update_GPU(): Add a little more to the base class's version of this method.
-        super.update_GPU(context, gpu_addresses, gpu_state, model_transform, material);
-        // Updated for assignment 4
-        context.uniform1f(gpu_addresses.animation_time, gpu_state.animation_time / 1000);
+        send_gpu_state(gl, gpu, gpu_state, model_transform) {
+            // send_gpu_state():  Send the state of our whole drawing context to the GPU.
+            const O = vec4(0, 0, 0, 1), camera_center = gpu_state.camera_transform.times(O).to3();
+            gl.uniform3fv(gpu.camera_center, camera_center);
+            // Use the squared scale trick from "Eric's blog" instead of inverse transpose matrix:
+            const squared_scale = model_transform.reduce(
+                (acc, r) => {
+                    return acc.plus(vec4(...r).times_pairwise(r))
+                }, vec4(0, 0, 0, 0)).to3();
+            gl.uniform3fv(gpu.squared_scale, squared_scale);
+            // Send the current matrices to the shader.  Go ahead and pre-compute
+            // the products we'll need of the of the three special matrices and just
+            // cache and send those.  They will be the same throughout this draw
+            // call, and thus across each instance of the vertex shader.
+            // Transpose them since the GPU expects matrices as column-major arrays.
+            const PCM = gpu_state.projection_transform.times(gpu_state.view_mat).times(model_transform);
+            gl.uniformMatrix4fv(gpu.model_transform, false, Matrix.flatten_2D_to_1D(model_transform.transposed()));
+            gl.uniformMatrix4fv(gpu.projection_camera_model_transform, false, Matrix.flatten_2D_to_1D(PCM.transposed()));
+            // shadow related
+            gl.uniformMatrix4fv(gpu.light_view_mat, false, Matrix.flatten_2D_to_1D(gpu_state.light_view_mat.transposed()));
+            gl.uniformMatrix4fv(gpu.light_proj_mat, false, Matrix.flatten_2D_to_1D(gpu_state.light_proj_mat.transposed()));
+
+            // Omitting lights will show only the material color, scaled by the ambient term:
+            if (!gpu_state.lights.length)
+                return;
+
+            const light_positions_flattened = [], light_colors_flattened = [];
+            for (let i = 0; i < 4 * gpu_state.lights.length; i++) {
+                light_positions_flattened.push(gpu_state.lights[Math.floor(i / 4)].position[i % 4]);
+                light_colors_flattened.push(gpu_state.lights[Math.floor(i / 4)].color[i % 4]);
+            }
+            gl.uniform4fv(gpu.light_positions_or_vectors, light_positions_flattened);
+            gl.uniform4fv(gpu.light_colors, light_colors_flattened);
+            gl.uniform1fv(gpu.light_attenuation_factors, gpu_state.lights.map(l => l.attenuation));
+        }
+
+        update_GPU(context, gpu_addresses, gpu_state, model_transform, material) {
+            // update_GPU(): Add a little more to the base class's version of this method.
+            super.update_GPU(context, gpu_addresses, gpu_state, model_transform, material);
+            // Updated for assignment 4
+            context.uniform1f(gpu_addresses.animation_time, gpu_state.animation_time / 1000);
+        }
     }
-}
 
 export class Shadow_Textured_Phong_Shader extends defs.Phong_Shader {
-    shared_glsl_code() {
-        // ********* SHARED CODE, INCLUDED IN BOTH SHADERS *********
-        return ` precision mediump float;
+        shared_glsl_code() {
+            // ********* SHARED CODE, INCLUDED IN BOTH SHADERS *********
+            return ` precision mediump float;
                 const int N_LIGHTS = ` + this.num_lights + `;
                 uniform float ambient, diffusivity, specularity, smoothness;
                 uniform vec4 light_positions_or_vectors[N_LIGHTS], light_colors[N_LIGHTS];
@@ -140,10 +140,10 @@ export class Shadow_Textured_Phong_Shader extends defs.Phong_Shader {
                       }
                     return result;
                   } `;
-    }
-    vertex_glsl_code() {
-        // ********* VERTEX SHADER *********
-        return this.shared_glsl_code() + `
+        }
+        vertex_glsl_code() {
+            // ********* VERTEX SHADER *********
+            return this.shared_glsl_code() + `
                 varying vec2 f_tex_coord;
                 attribute vec3 position, normal;                            
                 // Position is expressed in object coordinates.
@@ -161,13 +161,13 @@ export class Shadow_Textured_Phong_Shader extends defs.Phong_Shader {
                     // Turn the per-vertex texture coordinate into an interpolated variable.
                     f_tex_coord = texture_coord;
                   } `;
-    }
+        }
 
-    fragment_glsl_code() {
-        // ********* FRAGMENT SHADER *********
-        // A fragment is a pixel that's overlapped by the current triangle.
-        // Fragments affect the final image or get discarded due to depth.
-        return this.shared_glsl_code() + `
+        fragment_glsl_code() {
+            // ********* FRAGMENT SHADER *********
+            // A fragment is a pixel that's overlapped by the current triangle.
+            // Fragments affect the final image or get discarded due to depth.
+            return this.shared_glsl_code() + `
                 varying vec2 f_tex_coord;
                 uniform sampler2D texture;
                 uniform sampler2D light_depth_texture;
@@ -234,84 +234,84 @@ export class Shadow_Textured_Phong_Shader extends defs.Phong_Shader {
                     
                     gl_FragColor.xyz += diffuse + specular;
                 } `;
-    }
-
-    send_gpu_state(gl, gpu, gpu_state, model_transform) {
-        // send_gpu_state():  Send the state of our whole drawing context to the GPU.
-        const O = vec4(0, 0, 0, 1), camera_center = gpu_state.camera_transform.times(O).to3();
-        gl.uniform3fv(gpu.camera_center, camera_center);
-        // Use the squared scale trick from "Eric's blog" instead of inverse transpose matrix:
-        const squared_scale = model_transform.reduce(
-            (acc, r) => {
-                return acc.plus(vec4(...r).times_pairwise(r))
-            }, vec4(0, 0, 0, 0)).to3();
-        gl.uniform3fv(gpu.squared_scale, squared_scale);
-        // Send the current matrices to the shader.  Go ahead and pre-compute
-        // the products we'll need of the of the three special matrices and just
-        // cache and send those.  They will be the same throughout this draw
-        // call, and thus across each instance of the vertex shader.
-        // Transpose them since the GPU expects matrices as column-major arrays.
-        const PCM = gpu_state.projection_transform.times(gpu_state.view_mat).times(model_transform);
-        gl.uniformMatrix4fv(gpu.model_transform, false, Matrix.flatten_2D_to_1D(model_transform.transposed()));
-        gl.uniformMatrix4fv(gpu.projection_camera_model_transform, false, Matrix.flatten_2D_to_1D(PCM.transposed()));
-        // shadow related
-        gl.uniformMatrix4fv(gpu.light_view_mat, false, Matrix.flatten_2D_to_1D(gpu_state.light_view_mat.transposed()));
-        gl.uniformMatrix4fv(gpu.light_proj_mat, false, Matrix.flatten_2D_to_1D(gpu_state.light_proj_mat.transposed()));
-
-        // Omitting lights will show only the material color, scaled by the ambient term:
-        if (!gpu_state.lights.length)
-            return;
-
-        const light_positions_flattened = [], light_colors_flattened = [];
-        for (let i = 0; i < 4 * gpu_state.lights.length; i++) {
-            light_positions_flattened.push(gpu_state.lights[Math.floor(i / 4)].position[i % 4]);
-            light_colors_flattened.push(gpu_state.lights[Math.floor(i / 4)].color[i % 4]);
         }
-        gl.uniform4fv(gpu.light_positions_or_vectors, light_positions_flattened);
-        gl.uniform4fv(gpu.light_colors, light_colors_flattened);
-        gl.uniform1fv(gpu.light_attenuation_factors, gpu_state.lights.map(l => l.attenuation));
-    }
 
-    update_GPU(context, gpu_addresses, gpu_state, model_transform, material) {
-        // update_GPU(): Add a little more to the base class's version of this method.
-        super.update_GPU(context, gpu_addresses, gpu_state, model_transform, material);
-        // Updated for assignment 4
-        context.uniform1f(gpu_addresses.animation_time, gpu_state.animation_time / 1000);
-        if (material.color_texture && material.color_texture.ready) {
-            // Select texture unit 0 for the fragment shader Sampler2D uniform called "texture":
-            context.uniform1i(gpu_addresses.color_texture, 0); // 0 for color texture
-            // For this draw, use the texture image from correct the GPU buffer:
-            context.activeTexture(context["TEXTURE" + 0]);
-            material.color_texture.activate(context);
-            context.uniform1i(gpu_addresses.use_texture, 1);
+        send_gpu_state(gl, gpu, gpu_state, model_transform) {
+            // send_gpu_state():  Send the state of our whole drawing context to the GPU.
+            const O = vec4(0, 0, 0, 1), camera_center = gpu_state.camera_transform.times(O).to3();
+            gl.uniform3fv(gpu.camera_center, camera_center);
+            // Use the squared scale trick from "Eric's blog" instead of inverse transpose matrix:
+            const squared_scale = model_transform.reduce(
+                (acc, r) => {
+                    return acc.plus(vec4(...r).times_pairwise(r))
+                }, vec4(0, 0, 0, 0)).to3();
+            gl.uniform3fv(gpu.squared_scale, squared_scale);
+            // Send the current matrices to the shader.  Go ahead and pre-compute
+            // the products we'll need of the of the three special matrices and just
+            // cache and send those.  They will be the same throughout this draw
+            // call, and thus across each instance of the vertex shader.
+            // Transpose them since the GPU expects matrices as column-major arrays.
+            const PCM = gpu_state.projection_transform.times(gpu_state.view_mat).times(model_transform);
+            gl.uniformMatrix4fv(gpu.model_transform, false, Matrix.flatten_2D_to_1D(model_transform.transposed()));
+            gl.uniformMatrix4fv(gpu.projection_camera_model_transform, false, Matrix.flatten_2D_to_1D(PCM.transposed()));
+            // shadow related
+            gl.uniformMatrix4fv(gpu.light_view_mat, false, Matrix.flatten_2D_to_1D(gpu_state.light_view_mat.transposed()));
+            gl.uniformMatrix4fv(gpu.light_proj_mat, false, Matrix.flatten_2D_to_1D(gpu_state.light_proj_mat.transposed()));
+
+            // Omitting lights will show only the material color, scaled by the ambient term:
+            if (!gpu_state.lights.length)
+                return;
+
+            const light_positions_flattened = [], light_colors_flattened = [];
+            for (let i = 0; i < 4 * gpu_state.lights.length; i++) {
+                light_positions_flattened.push(gpu_state.lights[Math.floor(i / 4)].position[i % 4]);
+                light_colors_flattened.push(gpu_state.lights[Math.floor(i / 4)].color[i % 4]);
+            }
+            gl.uniform4fv(gpu.light_positions_or_vectors, light_positions_flattened);
+            gl.uniform4fv(gpu.light_colors, light_colors_flattened);
+            gl.uniform1fv(gpu.light_attenuation_factors, gpu_state.lights.map(l => l.attenuation));
         }
-        else {
-            context.uniform1i(gpu_addresses.use_texture, 0);
-        }
-        if (gpu_state.draw_shadow) {
-            context.uniform1i(gpu_addresses.draw_shadow, 1);
-            context.uniform1f(gpu_addresses.light_depth_bias, 0.003);
-            context.uniform1f(gpu_addresses.light_texture_size, LIGHT_DEPTH_TEX_SIZE);
-            context.uniform1i(gpu_addresses.light_depth_texture, 1); // 1 for light-view depth texture}
-            if (material.light_depth_texture && material.light_depth_texture.ready) {
-                context.activeTexture(context["TEXTURE" + 1]);
-                material.light_depth_texture.activate(context, 1);
+
+        update_GPU(context, gpu_addresses, gpu_state, model_transform, material) {
+            // update_GPU(): Add a little more to the base class's version of this method.
+            super.update_GPU(context, gpu_addresses, gpu_state, model_transform, material);
+            // Updated for assignment 4
+            context.uniform1f(gpu_addresses.animation_time, gpu_state.animation_time / 1000);
+            if (material.color_texture && material.color_texture.ready) {
+                // Select texture unit 0 for the fragment shader Sampler2D uniform called "texture":
+                context.uniform1i(gpu_addresses.color_texture, 0); // 0 for color texture
+                // For this draw, use the texture image from correct the GPU buffer:
+                context.activeTexture(context["TEXTURE" + 0]);
+                material.color_texture.activate(context);
+                context.uniform1i(gpu_addresses.use_texture, 1);
+            }
+            else {
+                context.uniform1i(gpu_addresses.use_texture, 0);
+            }
+            if (gpu_state.draw_shadow) {
+                context.uniform1i(gpu_addresses.draw_shadow, 1);
+                context.uniform1f(gpu_addresses.light_depth_bias, 0.003);
+                context.uniform1f(gpu_addresses.light_texture_size, LIGHT_DEPTH_TEX_SIZE);
+                context.uniform1i(gpu_addresses.light_depth_texture, 1); // 1 for light-view depth texture}
+                if (material.light_depth_texture && material.light_depth_texture.ready) {
+                    context.activeTexture(context["TEXTURE" + 1]);
+                    material.light_depth_texture.activate(context, 1);
+                }
+            }
+            else {
+                context.uniform1i(gpu_addresses.draw_shadow, 0);
             }
         }
-        else {
-            context.uniform1i(gpu_addresses.draw_shadow, 0);
-        }
     }
-}
 
 export class Depth_Texture_Shader_2D extends defs.Phong_Shader {
-    // **Textured_Phong** is a Phong Shader extended to addditionally decal a
-    // texture image over the drawn shape, lined up according to the texture
-    // coordinates that are stored at each shape vertex.
+        // **Textured_Phong** is a Phong Shader extended to addditionally decal a
+        // texture image over the drawn shape, lined up according to the texture
+        // coordinates that are stored at each shape vertex.
 
-    vertex_glsl_code() {
-        // ********* VERTEX SHADER *********
-        return this.shared_glsl_code() + `
+        vertex_glsl_code() {
+            // ********* VERTEX SHADER *********
+            return this.shared_glsl_code() + `
                 varying vec2 f_tex_coord;
                 attribute vec3 position, normal;                            
                 // Position is expressed in object coordinates.
@@ -329,13 +329,13 @@ export class Depth_Texture_Shader_2D extends defs.Phong_Shader {
                     // Turn the per-vertex texture coordinate into an interpolated variable.
                     f_tex_coord = texture_coord;
                   } `;
-    }
+        }
 
-    fragment_glsl_code() {
-        // ********* FRAGMENT SHADER *********
-        // A fragment is a pixel that's overlapped by the current triangle.
-        // Fragments affect the final image or get discarded due to depth.
-        return this.shared_glsl_code() + `
+        fragment_glsl_code() {
+            // ********* FRAGMENT SHADER *********
+            // A fragment is a pixel that's overlapped by the current triangle.
+            // Fragments affect the final image or get discarded due to depth.
+            return this.shared_glsl_code() + `
                 varying vec2 f_tex_coord;
                 uniform sampler2D texture;
                 uniform float animation_time;
@@ -350,73 +350,73 @@ export class Depth_Texture_Shader_2D extends defs.Phong_Shader {
                                                                              // Compute the final color with contributions from lights:
                     gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
                   } `;
-    }
+        }
 
-    update_GPU(context, gpu_addresses, gpu_state, model_transform, material) {
-        // update_GPU(): Add a little more to the base class's version of this method.
-        super.update_GPU(context, gpu_addresses, gpu_state, model_transform, material);
-        // Updated for assignment 4
-        context.uniform1f(gpu_addresses.animation_time, gpu_state.animation_time / 1000);
-        context.uniform1i(gpu_addresses.texture, 2); // 2 for light-view depth texture
-        context.activeTexture(context["TEXTURE" + 2]);
-        context.bindTexture(context.TEXTURE_2D, material.texture);
+        update_GPU(context, gpu_addresses, gpu_state, model_transform, material) {
+            // update_GPU(): Add a little more to the base class's version of this method.
+            super.update_GPU(context, gpu_addresses, gpu_state, model_transform, material);
+            // Updated for assignment 4
+            context.uniform1f(gpu_addresses.animation_time, gpu_state.animation_time / 1000);
+            context.uniform1i(gpu_addresses.texture, 2); // 2 for light-view depth texture
+            context.activeTexture(context["TEXTURE" + 2]);
+            context.bindTexture(context.TEXTURE_2D, material.texture);
+        }
     }
-}
 
 export class Buffered_Texture extends tiny.Graphics_Card_Object {
-    // **Texture** wraps a pointer to a new texture image where
-    // it is stored in GPU memory, along with a new HTML image object.
-    // This class initially copies the image to the GPU buffers,
-    // optionally generating mip maps of it and storing them there too.
-    constructor(texture_buffer_pointer) {
-        super();
-        Object.assign(this, {texture_buffer_pointer});
-        this.ready = true;
-        this.texture_buffer_pointer = texture_buffer_pointer;
+        // **Texture** wraps a pointer to a new texture image where
+        // it is stored in GPU memory, along with a new HTML image object.
+        // This class initially copies the image to the GPU buffers,
+        // optionally generating mip maps of it and storing them there too.
+        constructor(texture_buffer_pointer) {
+            super();
+            Object.assign(this, {texture_buffer_pointer});
+            this.ready = true;
+            this.texture_buffer_pointer = texture_buffer_pointer;
+        }
+
+        copy_onto_graphics_card(context, need_initial_settings = true) {
+            // copy_onto_graphics_card():  Called automatically as needed to load the
+            // texture image onto one of your GPU contexts for its first time.
+
+            // Define what this object should store in each new WebGL Context:
+            const initial_gpu_representation = {texture_buffer_pointer: undefined};
+            // Our object might need to register to multiple GPU contexts in the case of
+            // multiple drawing areas.  If this is a new GPU context for this object,
+            // copy the object to the GPU.  Otherwise, this object already has been
+            // copied over, so get a pointer to the existing instance.
+            const gpu_instance = super.copy_onto_graphics_card(context, initial_gpu_representation);
+
+            if (!gpu_instance.texture_buffer_pointer) gpu_instance.texture_buffer_pointer = this.texture_buffer_pointer;
+
+            // const gl = context;
+            // gl.bindTexture(gl.TEXTURE_2D, gpu_instance.texture_buffer_pointer);
+            //
+            // if (need_initial_settings) {
+            //     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+            //     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            //     // Always use bi-linear sampling when zoomed out.
+            //     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl[this.min_filter]);
+            //     // Let the user to set the sampling method
+            //     // when zoomed in.
+            // }
+            //
+            // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.image);
+            // if (this.min_filter == "LINEAR_MIPMAP_LINEAR")
+            //     gl.generateMipmap(gl.TEXTURE_2D);
+            // // If the user picked tri-linear sampling (the default) then generate
+            // // the necessary "mips" of the texture and store them on the GPU with it.
+            return gpu_instance;
+        }
+
+        activate(context, texture_unit = 0) {
+            // activate(): Selects this Texture in GPU memory so the next shape draws using it.
+            // Optionally select a texture unit in case you're using a shader with many samplers.
+            // Terminate draw requests until the image file is actually loaded over the network:
+            if (!this.ready)
+                return;
+            const gpu_instance = super.activate(context);
+            context.activeTexture(context["TEXTURE" + texture_unit]);
+            context.bindTexture(context.TEXTURE_2D, this.texture_buffer_pointer);
+        }
     }
-
-    copy_onto_graphics_card(context, need_initial_settings = true) {
-        // copy_onto_graphics_card():  Called automatically as needed to load the
-        // texture image onto one of your GPU contexts for its first time.
-
-        // Define what this object should store in each new WebGL Context:
-        const initial_gpu_representation = {texture_buffer_pointer: undefined};
-        // Our object might need to register to multiple GPU contexts in the case of
-        // multiple drawing areas.  If this is a new GPU context for this object,
-        // copy the object to the GPU.  Otherwise, this object already has been
-        // copied over, so get a pointer to the existing instance.
-        const gpu_instance = super.copy_onto_graphics_card(context, initial_gpu_representation);
-
-        if (!gpu_instance.texture_buffer_pointer) gpu_instance.texture_buffer_pointer = this.texture_buffer_pointer;
-
-        // const gl = context;
-        // gl.bindTexture(gl.TEXTURE_2D, gpu_instance.texture_buffer_pointer);
-        //
-        // if (need_initial_settings) {
-        //     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-        //     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        //     // Always use bi-linear sampling when zoomed out.
-        //     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl[this.min_filter]);
-        //     // Let the user to set the sampling method
-        //     // when zoomed in.
-        // }
-        //
-        // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.image);
-        // if (this.min_filter == "LINEAR_MIPMAP_LINEAR")
-        //     gl.generateMipmap(gl.TEXTURE_2D);
-        // // If the user picked tri-linear sampling (the default) then generate
-        // // the necessary "mips" of the texture and store them on the GPU with it.
-        return gpu_instance;
-    }
-
-    activate(context, texture_unit = 0) {
-        // activate(): Selects this Texture in GPU memory so the next shape draws using it.
-        // Optionally select a texture unit in case you're using a shader with many samplers.
-        // Terminate draw requests until the image file is actually loaded over the network:
-        if (!this.ready)
-            return;
-        const gpu_instance = super.activate(context);
-        context.activeTexture(context["TEXTURE" + texture_unit]);
-        context.bindTexture(context.TEXTURE_2D, this.texture_buffer_pointer);
-    }
-}
