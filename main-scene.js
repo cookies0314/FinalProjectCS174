@@ -8,7 +8,8 @@ import {Surfaces_Demo} from "./examples/surfaces-demo.js"
 import {Text_Demo} from "./examples/text-demo.js"
 import {Transforms_Sandbox} from "./examples/transforms-sandbox.js"
 import {Shadow_Demo} from "./examples/shadow-demo.js"
-import {BeachScene} from "./BeachScene.js"
+import {Control_Demo} from "./examples/control-demo.js"
+import {Mouse_Demo} from "./examples/mouse-demo.js"
 
 // Pull these names into this module's scope for convenience:
 const {
@@ -28,20 +29,24 @@ const Minimal_Webgl_Demo = defs.Minimal_Webgl_Demo;
 
 Object.assign(defs,
     {Axes_Viewer, Axes_Viewer_Test_Scene},
-            {Inertia_Demo, Collision_Demo},
-            {Many_Lights_Demo},
-            {Obj_File_Demo},
-            {Scene_To_Texture_Demo},
-            {Surfaces_Demo},
-            {Text_Demo},
-            {Transforms_Sandbox},
-            {Shadow_Demo});
+    {Inertia_Demo, Collision_Demo},
+    {Many_Lights_Demo},
+    {Obj_File_Demo},
+    {Scene_To_Texture_Demo},
+    {Surfaces_Demo},
+    {Text_Demo},
+    {Transforms_Sandbox},
+    {Shadow_Demo},
+    {Mouse_Demo},
+    {Control_Demo});
 
 // ******************** End extra step
 
 // (Can define Main_Scene's class here)
 
-const Main_Scene = BeachScene;
+// const Main_Scene = Control_Demo;
+// const Main_Scene = Mouse_Demo;
+const Main_Scene = Shadow_Demo;
 const Additional_Scenes = [];
 
 export {Main_Scene, Additional_Scenes, Canvas_Widget, Code_Widget, Text_Widget, defs}
