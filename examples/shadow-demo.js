@@ -148,6 +148,7 @@ export class Shadow_Demo extends Scene {
 
         this.initial_camera_location = Mat4.look_at(vec3(1, 0, 0), vec3(0, 0, 1), vec3(0, 1, 0));
         this.light_position = 0;
+        this.mirror = new Mirror(Vec.of(170, -49, -170), 80);
         this.sun_move = false;
         this.wind = false;
         this.cloud1_pos = -13
@@ -735,6 +736,7 @@ export class Shadow_Demo extends Scene {
                 this.shapes.cube.draw(context, program_state, rain_t8, this.materials.rain)
             }
         }
+            this.mirror.draw(context, program_state);
 
     }
 
@@ -804,7 +806,34 @@ export class Shadow_Demo extends Scene {
         program_state.projection_transform = Mat4.perspective(Math.PI / 4, context.width / context.height, 0.5, 500);
         this.render_scene(context, program_state, true,true, true);
 
+        this.mirror_reflection_image_control = new ImageControls(
+                "mirror_reflection",
+                context,
+                this.scratchpad,
+                this.scratchpad_context,
+                512
+        )
+
     }
+
+
+prepare_mirror(context, program_state) {
+        // mirror reflection
+        if (this.player.is_near_object(this.mirror.position, 30000)) {
+                program_state.clip_plane = Vec.of(0, 1, 0, -this.mirror.get_height());
+                let distance = this.invert_view(program_state, this.mirror.get_height());
+                this.render(context, program_state, false);
+                this.mirror_reflection_image_control.take_a_screen_shot();
+                program_state.mirror_reflection_texture = this.mirror_reflection_image_control.texture;
+                context.context.clear(
+                        context.context.COLOR_BUFFER_BIT | context.context.DEPTH_BUFFER_BIT
+                );
+                this.invert_view_back(program_state, distance);
+        }
+}
+
+
+        
 
 }
 

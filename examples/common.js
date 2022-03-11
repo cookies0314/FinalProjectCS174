@@ -779,6 +779,71 @@ const Textured_Phong = defs.Textured_Phong =
     }
 
 
+const MirrorShader = defs.MirrorShader =
+    class MirrorShader extends Phong_Shader {
+        constructor(num_lights = 2) {
+            super(num_lights);
+        }
+        
+        vertex_glsl_code() {
+            // ********* VERTEX SHADER *********
+            return (
+                this.shared_glsl_code() +
+                `
+                varying vec4 clip_space;
+                attribute vec3 position, normal;  // Position is expressed in object coordinates.
+                uniform mat4 model_transform;
+                uniform mat4 projection_camera_model_transform;
+                const float tiling = 6.0;
+                void main()
+                {               
+                clip_space = projection_camera_model_transform * vec4( position, 1.0 );
+                // The vertex's final resting place (in NDCS):
+                gl_Position = clip_space;
+                N = normalize( mat3( model_transform ) * normal / squared_scale);
+                vertex_worldspace = ( model_transform * vec4( position, 1.0 ) ).xyz;
+                // The final normal vector in screen space.
+                } `
+            );
+        }
+        fragment_glsl_code() {
+            // ********* FRAGMENT SHADER *********
+            // A fragment is a pixel that's overlapped by the current triangle.
+            // Fragments affect the final image or get discarded due to depth.
+            return (
+                this.shared_glsl_code() +
+                `
+                varying vec4 clip_space;
+                uniform sampler2D reflection_texture;
+                void main()
+                {           
+                vec2 ndc = (clip_space.xy / clip_space.w) / 2.0 + 0.5;
+                vec2 reflection_tex_coords = vec2(ndc.x, -ndc.y); 
+                vec4 reflection_color = texture2D(reflection_texture, reflection_tex_coords);
+                gl_FragColor = reflection_color;
+                gl_FragColor.xyz += phong_model_lights( vec3(0, 1, 0), vertex_worldspace, vec4(0, 0, 0, 0) );
+                } `
+            );
+        }
+        update_GPU(context, gpu_addresses, gpu_state, model_transform, material) {
+            // update_GPU(): Add a little more to the base class's version of this method.
+            super.update_GPU(
+                context,
+                gpu_addresses,
+                gpu_state,
+                model_transform,
+                material
+            );
+            if (material.reflection_texture && material.reflection_texture.ready) {
+                // Select texture unit 0 for the fragment shader Sampler2D uniform called "texture":
+                context.uniform1i(gpu_addresses.reflection_texture, 0);
+                // For this draw, use the texture image from correct the GPU buffer:
+                material.reflection_texture.activate(context, 0);
+            }
+        }
+    }
+
+
 const Fake_Bump_Map = defs.Fake_Bump_Map =
     class Fake_Bump_Map extends Textured_Phong {
         // **Fake_Bump_Map** Same as Phong_Shader, except adds a line of code to
@@ -1017,4 +1082,81 @@ const Program_State_Viewer = defs.Program_State_Viewer =
         display(context, program_state) {
             this.program_state = program_state;
         }
+    }
+
+const Mirror = defs.Mirror =
+    class Mirror {
+        constructor(position, size = 40) {
+            this.position = position;
+            this.size = size;
+            this.shape = new Square();
+            this.material = new Material(new MirrorShader(3), {
+                ambient: 1,
+                diffusivity: 2,
+                specularity: 0,
+                color: tiny.Color.of(1, 1, 1, 1)
+            });
+        }
+        
+        get_height = () => {
+            return this.position[1];
+        };
+        update(program_state) {
+            this.material.reflection_texture = program_state.mirror_reflection_texture;
+        }
+        draw(context, program_state) {
+            let transform = Mat4.identity()
+                .times(
+                    Mat4.translation([this.position[0], this.position[1], this.position[2]])
+                )
+                .times(Mat4.rotation(Math.PI / 2, [1, 0, 0]))
+                .times(Mat4.scale([this.size, this.size, this.size]));
+            this.shape.draw(context, program_state, transform, this.material);
+        }
+    }
+
+
+const ImageControls = defs.ImageControls =
+    class ImageControls extends Scene {
+        constructor(
+            message,
+            context,
+            scratchpad,
+            scratchpad_context,
+            scratchpad_size
+        ) {
+            super();
+            this.message = message;
+            this.context = context;
+            this.scratchpad = scratchpad;
+            this.scratchpad_context = scratchpad_context;
+            this.scratchpad_size = scratchpad_size;
+            this.texture = new Texture(
+                "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+            );
+        }
+        take_a_screen_shot() {
+            this.scratchpad.width = this.scratchpad_size;
+            this.scratchpad.height = this.scratchpad_size;
+            this.scratchpad_context.drawImage(
+                this.context.canvas,
+                0,
+                0,
+                this.scratchpad_size,
+                this.scratchpad_size
+            );
+            this.texture.image.src = this.image.src = this.scratchpad.toDataURL(
+                "image/png"
+            );
+            this.texture.copy_onto_graphics_card(this.context.context, false);
+        }
+        make_control_panel() {
+            this.control_panel.innerHTML += this.message;
+            this.image = this.control_panel.appendChild(
+                Object.assign(document.createElement("img"), {
+                    style: "width:200px; height:" + 200 * this.aspect_ratio + "px"
+                })
+            );
+        }
+        display(context, program_state) {}
     }
