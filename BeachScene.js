@@ -57,28 +57,19 @@ export class BeachScene extends Scene {
         const bump = new defs.Fake_Bump_Map(1);
         this.materials = {
             sun: new Material(new defs.Phong_Shader(),{ambient: 1, diffusivity: 0, specularity: 0, color: color(1,1,0,1)}),
-            //old texturedSand (didn't work)
-            // texturedSand: new Material(new Textured_Phong(), {
-            //     color: hex_color("#FFFFFF"),
-            //     ambient: 1, diffusivity: 0.6, specularity: 0.2,
-            //     texture: new Texture("assets/textured_sand.jpg")
-            // }),
             texturedSand: new Material(bump, {ambient: 1, specularity: 0, texture: new Texture("assets/textured_sand.jpg")}),
             shadow_textured_sand: new Material(new Shadow_Textured_Phong_Shader(1), {
                 color: color(1, 1, 1, 1), ambient: .3, diffusivity: 0.6, specularity: 0.4, smoothness: 64,
                 color_texture: new Texture("assets/textured_sand.jpg"),
                 light_depth_texture: null
             }),
-            // texturedSand: new Material(new defs.Phong_Shader(), {diffusivity: 0.5, color: color(0.761, 0.698, 0.502, 1.0)}),
             texturedWater:  new Material(bump, {ambient: 1, specularity: 0.3, texture: new Texture("assets/textured_water.jpeg")}),
-
             shadow_text_water: new Material(new Shadow_Textured_Phong_Shader(1),{
                 color: color(0,.4,.9,1),
                 ambient: .3, specularity: 0.5,
                 color_texture: new Texture("assets/textured_water.jpeg"),
                 light_depth_texture: null
             }),
-
             texturedSky:  new Material(bump, {ambient: 1, specularity: 0.2, texture: new Texture("assets/textured_sky.jpg")}),
             oldWater: new Material(new Textured_Phong(), {
                 color: color(0,0,0,1),
@@ -86,7 +77,6 @@ export class BeachScene extends Scene {
                 texture: new Texture("assets/textured_water.jpeg")
             }),
             cloudMat: new Material(bump, {ambient: 1, specularity: 0, texture: new Texture("assets/cloud.jpg")}),
-
             shadow_cloud_mat: new Material(new Shadow_Textured_Phong_Shader(1),
                 {
                     color: color(1,1,1,1),
@@ -94,7 +84,6 @@ export class BeachScene extends Scene {
                     color_texture: new Texture("assets/cloud.jpg"),
                     light_depth_texture: null
                 }),
-
             shadow_rain_cloud_mat: new Material(new Shadow_Textured_Phong_Shader(1),
                 {
                     color: color(0.5,0.5,0.5,1),
@@ -102,18 +91,14 @@ export class BeachScene extends Scene {
                     color_texture: new Texture("assets/rainclouds.jpg"),
                     light_depth_texture: null
                 }),
-
             texturedBeachBall:  new Material(bump, {ambient: 1, texture: new Texture("assets/beachball.jpg")}),
-
             shadow_text_Ball: new Material(new Shadow_Textured_Phong_Shader(1),{
                 color: color(.5,.5,.5,1),
                 ambient: .5, diffusivity: .5, specularity: 0.5,
                 color_texture: new Texture("assets/beachball.jpg"),
                 light_depth_texture: null
             }),
-
             umbrellaMat: new Material(bump, {ambient: 1, specularity: 0, texture: new Texture("assets/umbrella.jpg")}),
-
             shadow_umbrella_mat: new Material(new Shadow_Textured_Phong_Shader(1),{
                 color: color(.5,.5,.5,1),
                 ambient: .5, diffusivity: .5, specularity: .5,
@@ -121,18 +106,13 @@ export class BeachScene extends Scene {
                 light_depth_texture: null
             }),
             chairMat: new Material(bump, {ambient: 1, specularity: 0, texture: new Texture("assets/chairtexture.jpg")}),
-
             shadow_chair_mat: new Material(new Shadow_Textured_Phong_Shader(1), {
                 color: color(.5,.5,.5,1),
                 ambient: .5, diffusivity: .5, specularity: .5,
                 color_texture: new Texture("assets/chairtexture.jpg"),
                 light_depth_texture: null
             }),
-
-
-
             nighttexturedSand: new Material(bump, {ambient: 0.5, specularity: 0, texture: new Texture("assets/textured_sand.jpg")}),
-            // texturedSand: new Material(new defs.Phong_Shader(), {diffusivity: 0.5, color: color(0.761, 0.698, 0.502, 1.0)}),
             nighttexturedWater:  new Material(bump, {ambient: 0.7, specularity: 0.2, texture: new Texture("assets/textured_water.jpeg")}),
             nighttexturedSky:  new Material(bump, {ambient: 0.5, specularity: 0.1, texture: new Texture("assets/night.jpg")}),
             nightcloudMat: new Material(bump, {ambient: 0.6, specularity: 0, texture: new Texture("assets/cloud.jpg")}),
@@ -479,8 +459,8 @@ export class BeachScene extends Scene {
 
         //Constructing Sky
         let sky_transform = Mat4.identity();
-        sky_transform = sky_transform.times(Mat4.translation(0,4,-5.2));
-        sky_transform = sky_transform.times(Mat4.scale(20,10,.33));
+        sky_transform = sky_transform.times(Mat4.translation(0,4,-10));
+        sky_transform = sky_transform.times(Mat4.scale(30,15,.33));
 
         if (this.night) {
             this.shapes.cube.draw(context, program_state, sky_transform, this.materials.nighttexturedSky);
@@ -493,7 +473,7 @@ export class BeachScene extends Scene {
         }
 
         //Sand floor transform
-        let sand_transform = Mat4.scale(20, .1, 5);
+        let sand_transform = Mat4.scale(25, .1, 5);
         sand_transform = sand_transform.times(Mat4.translation(0,-25,0));
         sand_transform = sand_transform.times(Mat4.scale(1,20,10));
 
@@ -811,11 +791,11 @@ export class BeachScene extends Scene {
        //Lights
         if(this.sun_move)
         {
-            this.light_position = Mat4.rotation(-.75*t, 0,0,1).times(Mat4.translation(0,10,0).times(vec4(1, -.5, 0, 1)));
+            this.light_position = Mat4.rotation(-.75*t, 0,1,0).times(Mat4.translation(6,10,0).times(vec4(1, -.5, 1, 1)));
         }
         else
         {
-            this.light_position = Mat4.translation(0,10,0).times(vec4(1, -.5, 0, 1));
+            this.light_position = Mat4.translation(0,10,0).times(vec4(1, -.5, 1, 1));
         }
 
 
