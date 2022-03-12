@@ -1,15 +1,18 @@
-# Shadow Demo
+# Life's a Beach Project
 
-This is a Tiny-Graphics demo about advanced shadow implementation that with 2 passes.
+Team: Owen Kiokemeister, Shammo Chanda, Kevin Case, Rosa Garza
 
-![main](./docs/main.png)
+Inside you will see the modifiable scene of a beach. There are some beach chairs, some umbrellas, a couple of beach balls, clouds, and the shore.
+
+The interactivity is provided by the buttons on the control panel. Users can activate waves, change the scene from day to night, and introduct wind that blows objects. As well, users can introduct rain, which produces more clouds and makes rain fall on the beach. There is also a reset button that takes the scene back to default.
+
+For the advanced features, our team implemented shadowing which can be seen on the clouds and beach items. We also implemented collision detection on the beach balls to prevent them from going through the beach chairs when the wind blows.
+
+We spent a really long time working on mirroring, but it turns out it's way harder than the other advanced features, and there was no demo code :)
+
 
 ### Code Location
 
-Most of the code are located in `./examples/shadow-demo.js`. You can copy that file into the `examples` folder of your repos (like assignments or team project), it should be compatible and you can import it as your main scene.
+Inside, you'll find the most of the main scene building code in BeachScene.js.
 
-### References
-
-https://webglfundamentals.org/webgl/lessons/webgl-shadows.html
-
-https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping
+To run the project, you can run the .BAT file host.bat. This should start the python server hosting the project, making it accessible at http://localhost:8000. 
