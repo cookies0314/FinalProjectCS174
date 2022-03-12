@@ -548,6 +548,7 @@ export class Shadow_Demo extends Scene {
                 this.shapes.beachChair.draw(context, program_state, chair_transform, shadow_pass? this.materials.shadow_chair_mat : this.pure)
             }
         }
+            
         //BeachBall
         let beachBall_transform = Mat4.identity();
         beachBall_transform = beachBall_transform.times(Mat4.translation(-3, 0, 3)).times(Mat4.scale(0.5,0.5,0.5));

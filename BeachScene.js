@@ -30,6 +30,7 @@ const Square =
         }
     }
 
+
 // The scene
 export class BeachScene extends Scene {
     constructor() {
@@ -173,26 +174,33 @@ export class BeachScene extends Scene {
         this.light_position = 0;
         this.sun_move = false;
         this.wind = false;
-        this.cloud1_pos = -13
-        this.cloud2_pos = -6.5
-        this.cloud3_pos = -1
-        this.cloud4_pos = 3.5
-        this.cloud5_pos = 9
-        this.cloud6_pos = 15.0
-        this.cloud7_pos = -15
-        this.cloud8_pos = -9.75
-        this.cloud9_pos = -3.75
-        this.cloud10_pos = 1
-        this.cloud11_pos = 6.25
-        this.cloud12_pos = 11.5
-        this.prev_t = 0
-        this.prev_prev_t = 0
-        this.wind_cloud_time = 0
-        this.ball_roll = 0
-        this.waves = false
-        this.prev_wave_t = 0
-        this.night = false
-        this.rain = false
+        this.cloud1_pos = -13;
+        this.cloud2_pos = -6.5;
+        this.cloud3_pos = -1;
+        this.cloud4_pos = 3.5;
+        this.cloud5_pos = 9;
+        this.cloud6_pos = 15.0;
+        this.cloud7_pos = -15;
+        this.cloud8_pos = -9.75;
+        this.cloud9_pos = -3.75;
+        this.cloud10_pos = 1;
+        this.cloud11_pos = 6.25;
+        this.cloud12_pos = 11.5;
+        this.prev_t = 0;
+        this.prev_prev_t = 0;
+        this.wind_cloud_time = 0;
+        this.ball_roll = 0;
+        this.waves = false;
+        this.prev_wave_t = 0;
+        this.night = false;
+        this.rain = false;
+        this.chair_pos = vec4(0,0,0);
+        
+        this.ball1_move = true;
+        this.ball2_move = true;
+
+        this.bb1 = vec3(1,0,0);
+        this.bb2 = vec3(-2,0,0);
 
         // For the first pass
         this.pure = new Material(new Color_Phong_Shader(), {
@@ -209,6 +217,7 @@ export class BeachScene extends Scene {
 
         // To make sure texture initialization only does once
         this.init_ok = false;
+        
     }
 
     update(program_state){
@@ -408,49 +417,6 @@ export class BeachScene extends Scene {
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
 
-    /*
-    draw_sand(context, program_state, sand_transform) {
-        const t = this.t = program_state.animation_time / 1000;
-        let rotation_angle = 0;
-
-        sand_transform = sand_transform.times(Mat4.translation(2,0,0));
-        if (this.night) {
-            this.shapes.cubeSand.draw(context, program_state, sand_transform, this.materials.nighttexturedSand);
-        }
-        else {
-            if (this.rain) {
-                this.shapes.cubeSand.draw(context, program_state, sand_transform, this.materials.texturedSand.override({ambient: 0.9}));
-            } else {
-                this.shapes.cubeSand.draw(context, program_state, sand_transform, this.materials.texturedSand);
-            }
-        }
-        // this.shapes.cubeSand.draw(context, program_state, sand_transform, this.floor);
-        return sand_transform;
-    }
-
-    //Draws a single block of water and moves the water_transform to the next block
-    draw_water(context, program_state, water_transform) {
-        const t = this.t = program_state.animation_time / 1000;
-        let rotation_angle = 0;
-
-        water_transform = water_transform.times(Mat4.translation(2,0,0));
-        if (this.night) {
-            this.shapes.cube.draw(context, program_state, water_transform, this.materials.nighttexturedWater);
-        }
-        else {
-            if (this.rain) {
-                this.shapes.cube.draw(context, program_state, water_transform, this.materials.texturedWater.override({ambient: 0.9}));
-            } else {
-                this.shapes.cube.draw(context, program_state, water_transform, this.materials.texturedWater);
-            }
-
-        }
-        // this.shapes.cube.draw(context, program_state, water_transform, this.floor);
-        return water_transform;
-    }
-
-     */
-
     move_clouds(position, t) {
         if (position < -18) {
             while (position < -18) {
@@ -476,6 +442,7 @@ export class BeachScene extends Scene {
             return position
         }
     }
+
 
     render_water(context, program_state, shadow_pass){
 
@@ -644,22 +611,6 @@ export class BeachScene extends Scene {
         }
 
 
-       
-        //Prevents the user from moving the camera by setting the position every time
-        // program_state.set_camera(Mat4.translation(1.33, -3.13, -20));
-
-        /*
-        for (let i = 0; i < 10; i++) {
-            // this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
-            sand_transform = this.draw_sand(context, program_state, sand_transform);
-        }
-
-        for (let i = 0; i < 20; i++) {
-            // this.shapes.sand.draw(context, program_state, sand_transform, this.materials.texturedSand);
-            water_transform = this.draw_water(context, program_state, water_transform);
-        }
-        */
-
         //Chair
         let chair_transform = Mat4.identity();
         chair_transform = chair_transform.times(Mat4.translation(-8.5, 0.75, 3)).times(Mat4.scale(0.6,0.6,0.6));
@@ -676,36 +627,64 @@ export class BeachScene extends Scene {
                 this.shapes.beachChair.draw(context, program_state, chair_transform1, shadow_pass? this.materials.shadow_chair_mat : this.pure)
             }
         }
-        //BeachBall
+        this.chair_pos = chair_transform;
+        console.log("CHAIR LOCATION",this.chair_pos);
+            
+        //BeachBall's positioning
         let beachBall_transform = Mat4.identity();
+        // console.log("b1",beachBall_transform);
         beachBall_transform = beachBall_transform.times(Mat4.translation(-3, 0, 3)).times(Mat4.scale(0.5,0.5,0.5));
-        let beachBall_transform1 = beachBall_transform.times(Mat4.translation(0, 0, 9));
+        // console.log("b1",beachBall_transform);
+        
+        
+        let beachBall_transform2 = beachBall_transform.times(Mat4.translation(0, 0, 9));
+        // let ball2_pos = beachBall_transform2;
 
-        if (this.wind) {
-            if (-2*wind_time > -7.85) {
-                beachBall_transform = beachBall_transform.times(Mat4.translation(-2*wind_time, 0 , 0))
-                beachBall_transform = beachBall_transform.times(Mat4.rotation(2*wind_time, 0, 0, 1))
-                beachBall_transform1 = beachBall_transform1.times(Mat4.translation(-2*wind_time, 0 , 0))
-                beachBall_transform1 = beachBall_transform1.times(Mat4.rotation(2*wind_time, 0, 0, 1))
-                this.ball_roll = 2*wind_time
-            } else {
-                beachBall_transform = beachBall_transform.times(Mat4.translation(-7.85, 0 , 0))
-                beachBall_transform = beachBall_transform.times(Mat4.rotation(this.ball_roll, 0, 0, 1))
-                beachBall_transform1 = beachBall_transform1.times(Mat4.translation(-7.85, 0 , 0))
-                beachBall_transform1 = beachBall_transform1.times(Mat4.rotation(this.ball_roll, 0, 0, 1))
+            
+        if (this.wind){
+                // CHECKING BALL ONE'S POSITIONING 
+                beachBall_transform = beachBall_transform.times(Mat4.translation(-2*wind_time, 0 , 0));
+                beachBall_transform = beachBall_transform.times(Mat4.rotation(2*wind_time, 0, 0, 1));
+                // this.bb1 = beachBall_transform;
+                console.log("bb1",beachBall_transform);
+                if ((check_collision(beachBall_transform, this.chair_pos))) {
+                       this.bb1 = beachBall_transform;
+
+                        }
+       
+                // CHECKING BALL TWO'S POSITIONING    
+                beachBall_transform2 = beachBall_transform2.times(Mat4.translation(-2*wind_time, 0 , 0));
+                beachBall_transform2 = beachBall_transform2.times(Mat4.rotation(2*wind_time, 0, 0, 1));
+                console.log("bb2",this.bb2);
+                if((check_collision(beachBall_transform2, this.chair_pos))) {
+                        this.bb2 = beachBall_transform2;
+                        }
+                this.ball_roll = 2*wind_time;
             }
-        }
+                
+        else {
+                // beachBall_transform = beachBall_transform.times(Mat4.translation(1,0,0));
+                beachBall_transform = beachBall_transform.times(Mat4.rotation(this.ball_roll, 0, 0, 1));
+                
+                // beachBall_transform2 = beachBall_transform2.times(Mat4.translation(-2, 0 , 0));
+                beachBall_transform2 = beachBall_transform2.times(Mat4.rotation(this.ball_roll, 0, 0, 1));
+            }
+       // beachBall_transform = this.bb1;
+       // beachBall_transform2 = this.bb2;
+
+
+
 
         if (this.night) {
             this.shapes.beachBall.draw(context, program_state, beachBall_transform, shadow_pass? this.materials.shadow_text_Ball.override({ambient : 0.2}) : this.pure);
-            this.shapes.beachBall.draw(context, program_state, beachBall_transform1, shadow_pass? this.materials.shadow_text_Ball.override({ambient : 0.2}) : this.pure);
+            this.shapes.beachBall.draw(context, program_state, beachBall_transform2, shadow_pass? this.materials.shadow_text_Ball.override({ambient : 0.2}) : this.pure);
         } else {
             if (this.rain) {
                 this.shapes.beachBall.draw(context, program_state, beachBall_transform, shadow_pass? this.materials.shadow_text_Ball.override({ambient : 0.35}) : this.pure);
-                this.shapes.beachBall.draw(context, program_state, beachBall_transform1, shadow_pass? this.materials.shadow_text_Ball.override({ambient : 0.35}) : this.pure);
+                this.shapes.beachBall.draw(context, program_state, beachBall_transform2, shadow_pass? this.materials.shadow_text_Ball.override({ambient : 0.35}) : this.pure);
             } else {
                 this.shapes.beachBall.draw(context, program_state, beachBall_transform, shadow_pass? this.materials.shadow_text_Ball : this.pure);
-                this.shapes.beachBall.draw(context, program_state, beachBall_transform1, shadow_pass? this.materials.shadow_text_Ball : this.pure);
+                this.shapes.beachBall.draw(context, program_state, beachBall_transform2, shadow_pass? this.materials.shadow_text_Ball : this.pure);
             }
         }
 
@@ -1008,5 +987,32 @@ export class BeachScene extends Scene {
         // program_state.set_camera(Mat4.translation(-3.15, 7, -85.37));
     }
 
+        
+
 }
+
+function check_collision(ball_p, chair_pos){
+        
+        let x = ball_p[0][3];
+        let y = ball_p[1][3];
+        let z = ball_p[2][3];
+        let within_box = false;
+       console.log("in function, ball_p", ball_p);
+        console.log("in function, chair_p",chair_pos);
+
+
+        if( y < 0.6 + chair_pos[1][3] && chair_pos[1][3]-0.6> y){
+                within_box = true;
+        }
+        
+        if( (x>chair_pos[0][3]) && within_box){
+                console.log(ball_p[0][3]);
+                console.log(chair_pos[0][3]);
+                return true;
+        }
+        
+        return false;
+}
+
+
 
