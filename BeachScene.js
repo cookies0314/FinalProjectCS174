@@ -1005,9 +1005,9 @@ function check_collision(ball_p, chair_pos){
                 within_box = true;
         }
         
-        if( (x>chair_pos[0][3]) && within_box){
-                console.log(ball_p[0][3]);
-                console.log(chair_pos[0][3]);
+        if( (x<chair_pos[0][3]) && within_box){
+                console.log("detectted",ball_p[0][3]);
+                console.log("detected",chair_pos[0][3]);
                 return true;
         }
         
